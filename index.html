@@ -180,25 +180,25 @@
 
   /* 右側コントロールパネル */
   .control-panel {
-    width: 295px;
+    width: 300px;
     flex-shrink: 0;
     background: #1e293b;
     border-left: 1px solid #334155;
-    padding: 12px;
+    padding: 10px 12px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     overflow-y: auto;
   }
   .card {
     background: #0f172a;
     border: 1px solid #334155;
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 9px 11px;
   }
   .card h2 {
-    margin: 0 0 8px 0;
-    font-size: 12.5px;
+    margin: 0 0 7px 0;
+    font-size: 12px;
     color: #94a3b8;
     border-bottom: 1px solid #1e293b;
     padding-bottom: 4px;
@@ -212,9 +212,9 @@
     background: #2563eb;
     color: #fff;
     border: none;
-    padding: 8px 8px;
+    padding: 7px 8px;
     border-radius: 6px;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: bold;
     cursor: pointer;
     transition: background 0.15s;
@@ -224,13 +224,13 @@
   button.secondary:hover { background: #475569; }
   button.active-mode { background: #ea580c; }
 
-  .slider-row { margin-bottom: 8px; }
+  .slider-row { margin-bottom: 7px; }
   .slider-row:last-child { margin-bottom: 0; }
   .slider-label {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
-    margin-bottom: 3px;
+    font-size: 11.5px;
+    margin-bottom: 2px;
   }
   .slider-val {
     font-family: monospace;
@@ -245,23 +245,23 @@
   .readout-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 5px;
   }
   .readout-item {
     background: #1e293b;
-    padding: 7px 8px;
+    padding: 6px 8px;
     border-radius: 6px;
   }
-  .readout-title { font-size: 10.5px; color: #94a3b8; }
+  .readout-title { font-size: 10px; color: #94a3b8; }
   .readout-num {
     font-family: monospace;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: bold;
-    margin-top: 2px;
+    margin-top: 1px;
   }
   .eq-box {
     font-size: 11px;
-    line-height: 1.5;
+    line-height: 1.45;
     color: #cbd5e1;
     font-family: "Times New Roman", serif;
   }
@@ -282,7 +282,10 @@
       <!-- 左上：回路動作モード表示 -->
       <div class="overlay-badge">
         <div>回路状態: <span id="mode-badge" class="status-pill pill-idle">待機中 (OFF)</span></div>
-        <div style="margin-top:3px; color:#cbd5e1;">
+        <div id="freq-status" style="margin-top:3px; color:#38bdf8; font-family:monospace; font-size:11.5px;">
+          連続パルス設定: 3.8 Hz (周期 263 ms / Duty 35%)
+        </div>
+        <div style="margin-top:2px; color:#cbd5e1;">
           <span style="color:#fb923c;">●</span> <b>ON時</b>: 電源(+) → <b>抵抗R</b> → コイルL → MOSFET(D→S) → GND(-)<br>
           <span style="color:#38bdf8;">●</span> <b>OFF時</b>: コイルL → 還流ダイオード(A→K) → <b>抵抗R</b> → コイルL 循環減衰
         </div>
@@ -334,6 +337,20 @@
       </div>
       <div style="margin-top:6px;">
         <button id="btn-manual" class="secondary" style="width:100%;" onclick="toggleManualGate()">手動スイッチ切替 (現在: OFF)</button>
+      </div>
+      <div class="slider-row" style="margin-top:8px;">
+        <div class="slider-label">
+          <span>パルス周波数 f</span>
+          <span class="slider-val" id="lbl-freq">3.8 Hz (263 ms)</span>
+        </div>
+        <input type="range" id="inp-freq" min="1.0" max="10.0" step="0.2" value="3.8">
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">
+          <span>デューティ比 (Duty)</span>
+          <span class="slider-val" id="lbl-duty">35 %</span>
+        </div>
+        <input type="range" id="inp-duty" min="20" max="80" step="5" value="35">
       </div>
     </div>
 
@@ -410,7 +427,7 @@ const phys = {
   F_preload: 1.2,
 
   i: 0.0,
-  i_diode: 0.0, // 還流ダイオード電流 i_D(t)
+  i_diode: 0.0,
   x: 0.0,
   v: 0.0,
   gateOn: false,
@@ -421,6 +438,10 @@ let singlePulseTimer = 0;
 let autoPulseMode = false;
 let autoClock = 0;
 let manualHold = false;
+
+// ★スイッチング周波数・デューティ比設定
+let pulseFreq = 3.8;   // Hz (1.0 .. 10.0)
+let pulseDuty = 0.35;  // 0.20 .. 0.80
 
 function getL(x) {
   const ratio = Math.max(0, Math.min(1, x / phys.x_max));
@@ -476,9 +497,7 @@ function stepPhysics(dt) {
   if (phys.x <= 0) { phys.x = 0; if (phys.v < 0) phys.v = 0; }
   if (phys.x >= phys.x_max) { phys.x = phys.x_max; if (phys.v > 0) phys.v = 0; }
 
-  // 還流ダイオード電流の算出：MOSFETがOFFでコイル電流が正のときのみ還流ダイオードに流れる
   phys.i_diode = (!phys.gateOn && phys.i > 0) ? phys.i : 0.0;
-
   phys.simTime += dt;
 }
 
@@ -517,6 +536,23 @@ function updateButtonLabels() {
   btnMan.className = manualHold ? 'active-mode' : 'secondary';
 }
 
+function updateFreqReadout() {
+  const periodMs = Math.round(1000 / pulseFreq);
+  const dutyPct = Math.round(pulseDuty * 100);
+  document.getElementById('lbl-freq').textContent = `${pulseFreq.toFixed(1)} Hz (${periodMs} ms)`;
+  document.getElementById('lbl-duty').textContent = `${dutyPct} %`;
+  document.getElementById('freq-status').textContent =
+    `連続パルス設定: ${pulseFreq.toFixed(1)} Hz (周期 ${periodMs} ms / Duty ${dutyPct}%)`;
+}
+
+document.getElementById('inp-freq').addEventListener('input', e => {
+  pulseFreq = parseFloat(e.target.value);
+  updateFreqReadout();
+});
+document.getElementById('inp-duty').addEventListener('input', e => {
+  pulseDuty = parseFloat(e.target.value) / 100.0;
+  updateFreqReadout();
+});
 document.getElementById('inp-V').addEventListener('input', e => {
   phys.V_sup = parseFloat(e.target.value);
   document.getElementById('lbl-V').textContent = phys.V_sup.toFixed(1) + ' V';
@@ -1104,7 +1140,7 @@ springMesh.position.set(springRetainerX, 0.2, 0);
 solGroup.add(springMesh);
 
 // =========================================================
-// 4. リアルタイムオシロスコープ描画（還流ダイオード電流 i_D 追加）
+// 4. リアルタイムオシロスコープ描画
 // =========================================================
 const scopeContainer = document.getElementById('scope-container');
 const scopeCanvas = document.getElementById('scope-canvas');
@@ -1114,7 +1150,7 @@ const historyLen = 360;
 const hist = {
   gate: new Array(historyLen).fill(0),
   i: new Array(historyLen).fill(0),
-  id: new Array(historyLen).fill(0), // 還流ダイオード電流履歴
+  id: new Array(historyLen).fill(0),
   x: new Array(historyLen).fill(0),
   L: new Array(historyLen).fill(32)
 };
@@ -1155,7 +1191,6 @@ function drawScope() {
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
 
-  // グリッド線
   sCtx.strokeStyle = '#1e293b';
   sCtx.lineWidth = 1;
   for (let gx = padL; gx <= padL + plotW; gx += 50) {
@@ -1169,7 +1204,6 @@ function drawScope() {
   const maxI = Math.max(2.0, (phys.V_sup / phys.R) * 1.25);
   const maxX = 8.8;
 
-  // 左側縦軸目盛りラベル（電流 A）
   sCtx.font = 'bold 11px monospace';
   sCtx.fillStyle = '#fb923c';
   sCtx.textAlign = 'right';
@@ -1194,25 +1228,18 @@ function drawScope() {
     return lastPy;
   }
 
-  // 1. Gate信号
   drawTrace(hist.gate, 0, 1.15, 'rgba(148, 163, 184, 0.32)', 1.5);
-  // 2. インダクタンス L(x)
   const pyL = drawTrace(hist.L, 25, 165, '#c084fc', 1.8);
-  // 3. プランジャ変位 x(t)
   const pyX = drawTrace(hist.x, 0, maxX, '#34d399', 2.4);
-  // 4. コイル電流 i(t)（オレンジ太線）
   const pyI = drawTrace(hist.i, 0, maxI, '#fb923c', 3.2);
-  // 5. 還流ダイオード電流 i_D(t)（水色実線：OFF時にコイル電流の上に重なって減衰を描く）
   const pyId = drawTrace(hist.id, 0, maxI, '#38bdf8', 2.0);
 
-  // 右端の最新ポイントマーカー（波形の先端ドット）
   const rightX = padL + plotW;
   sCtx.fillStyle = '#c084fc'; sCtx.beginPath(); sCtx.arc(rightX, pyL, 3.5, 0, Math.PI * 2); sCtx.fill();
   sCtx.fillStyle = '#34d399'; sCtx.beginPath(); sCtx.arc(rightX, pyX, 4.0, 0, Math.PI * 2); sCtx.fill();
   sCtx.fillStyle = '#fb923c'; sCtx.beginPath(); sCtx.arc(rightX, pyI, 4.5, 0, Math.PI * 2); sCtx.fill();
   sCtx.fillStyle = '#38bdf8'; sCtx.beginPath(); sCtx.arc(rightX, pyId, 3.5, 0, Math.PI * 2); sCtx.fill();
 
-  // 右側テレメトリ欄（文字が重ならないように等間隔で整列配置）
   const labelX = rightX + 12;
   const rowStep = Math.max(22, plotH / 4.2);
   sCtx.textAlign = 'left';
@@ -1230,7 +1257,6 @@ function drawScope() {
   sCtx.fillStyle = '#c084fc';
   sCtx.fillText('L   = ' + (getL(phys.x) * 1000).toFixed(0) + ' mH', labelX, padT + rowStep * 3.6);
 
-  // 上部凡例ラベル
   sCtx.font = 'bold 11.5px sans-serif';
   let lx = padL;
   sCtx.fillStyle = '#fb923c'; sCtx.fillText('■ コイル電流 i(t)', lx, 17); lx += 125;
@@ -1256,6 +1282,7 @@ function animate(now) {
 
   const subSteps = 20;
   const subDt = 0.0002;
+  const period = 1.0 / pulseFreq;
 
   for (let s = 0; s < subSteps; s++) {
     if (singlePulseTimer > 0) {
@@ -1266,8 +1293,8 @@ function animate(now) {
         phys.gateOn = false;
       }
     } else if (autoPulseMode) {
-      autoClock = (autoClock + subDt) % 0.26;
-      phys.gateOn = (autoClock < 0.09);
+      autoClock = (autoClock + subDt) % period;
+      phys.gateOn = (autoClock < period * pulseDuty);
     } else {
       phys.gateOn = manualHold;
     }
@@ -1349,10 +1376,14 @@ function animate(now) {
   // UIステータス更新
   const badge = document.getElementById('mode-badge');
   if (phys.gateOn) {
-    badge.textContent = 'MOSFET ON（電源 → 抵抗R → コイルL → MOSFET 駆動中）';
+    badge.textContent = autoPulseMode
+      ? `MOSFET ON（連続 ${pulseFreq.toFixed(1)}Hz 駆動中）`
+      : 'MOSFET ON（電源 → 抵抗R → コイルL → MOSFET 駆動中）';
     badge.className = 'status-pill pill-on';
   } else if (phys.i > 0.015) {
-    badge.textContent = 'MOSFET OFF（還流ダイオード導通 → 抵抗R で減衰中）';
+    badge.textContent = autoPulseMode
+      ? `MOSFET OFF（還流ダイオード減衰中 / ${pulseFreq.toFixed(1)}Hz）`
+      : 'MOSFET OFF（還流ダイオード導通 → 抵抗R で減衰中）';
     badge.className = 'status-pill pill-off';
   } else {
     badge.textContent = '待機中 (OFF / 電流ゼロ)';
@@ -1395,6 +1426,7 @@ function animate(now) {
 window.addEventListener('resize', resizeThree);
 
 resizeThree();
+updateFreqReadout();
 setCameraView('bench');
 setTimeout(() => {
   resizeThree();
