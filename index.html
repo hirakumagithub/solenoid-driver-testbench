@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <title>3D ソレノイド駆動回路テストベンチ・シミュレータ</title>
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:title" content="3Dソレノイド電気・機械連成シミュレータ">
+<meta property="og:description" content="3Dソレノイド機構（Three.js・マウスで視点回転／ズーム可能）・リアルタイム波形オシロスコープ">
+<meta property="og:image" content="https://hirakumagithub.github.io/solenoid-driver-testbench/screenshot.png">
 <style>
   * { box-sizing: border-box; }
   html, body {
@@ -75,7 +79,7 @@
     pointer-events: none;
   }
 
-  /* 右上：大型リアルタイム数値HUD（元投稿風のテレメトリ表示） */
+  /* 右上：大型リアルタイム数値HUD */
   .telemetry-hud {
     position: absolute;
     top: 12px;
@@ -103,7 +107,7 @@
   }
   .hud-value {
     font-family: "Consolas", "Monaco", monospace;
-    font-size: 22px;
+    font-size: 21px;
     font-weight: bold;
     line-height: 1.2;
     margin-top: 2px;
@@ -262,14 +266,6 @@
     font-family: "Times New Roman", serif;
   }
 </style>
-
-
-<!-- ▼ ここから下の4行を </head> の直前に追加する ▼ -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta property="og:title" content="3Dソレノイド電気・機械連成シミュレータ">
-  <meta property="og:description" content="3Dソレノイド機構（Three.js・マウスで視点回転／ズーム可能）・リアルタイム4現象オシロスコープ">
-  <meta property="og:image" content="https://hirakumagithub.github.io/solenoid-driver-testbench/screenshot.png">
-
 </head>
 <body>
 
@@ -300,6 +296,11 @@
           <div class="hud-bar-bg"><div class="hud-bar-fill" id="bar-i" style="background:#fb923c;"></div></div>
         </div>
         <div class="hud-cell">
+          <span class="hud-label">還流ダイオード i_D(t)</span>
+          <span class="hud-value" id="hud-id" style="color:#38bdf8;">0.00 A</span>
+          <div class="hud-bar-bg"><div class="hud-bar-fill" id="bar-id" style="background:#38bdf8;"></div></div>
+        </div>
+        <div class="hud-cell">
           <span class="hud-label">プランジャ変位 x(t)</span>
           <span class="hud-value" id="hud-x" style="color:#34d399;">0.00 mm</span>
           <div class="hud-bar-bg"><div class="hud-bar-fill" id="bar-x" style="background:#34d399;"></div></div>
@@ -308,11 +309,6 @@
           <span class="hud-label">インダクタンス L(x)</span>
           <span class="hud-value" id="hud-L" style="color:#c084fc;">32.0 mH</span>
           <div class="hud-bar-bg"><div class="hud-bar-fill" id="bar-L" style="background:#c084fc;"></div></div>
-        </div>
-        <div class="hud-cell">
-          <span class="hud-label">磁気吸引力 F_mag</span>
-          <span class="hud-value" id="hud-F" style="color:#38bdf8;">0.00 N</span>
-          <div class="hud-bar-bg"><div class="hud-bar-fill" id="bar-F" style="background:#38bdf8;"></div></div>
         </div>
       </div>
 
@@ -345,20 +341,20 @@
       <h2>詳細計測データ</h2>
       <div class="readout-grid">
         <div class="readout-item">
-          <div class="readout-title">プランジャ速度 dx/dt</div>
-          <div class="readout-num" id="val-v" style="color:#e2e8f0;">0.00 m/s</div>
-        </div>
-        <div class="readout-item">
-          <div class="readout-title">速度起電力 e_v</div>
-          <div class="readout-num" id="val-ev" style="color:#f43f5e;">0.00 V</div>
+          <div class="readout-title">磁気吸引力 F_mag</div>
+          <div class="readout-num" id="val-F" style="color:#38bdf8;">0.00 N</div>
         </div>
         <div class="readout-item">
           <div class="readout-title">ばね復元力 F_sp</div>
           <div class="readout-num" id="val-Fsp" style="color:#34d399;">1.20 N</div>
         </div>
         <div class="readout-item">
-          <div class="readout-title">抵抗損失 i²R</div>
-          <div class="readout-num" id="val-P" style="color:#fbbf24;">0.00 W</div>
+          <div class="readout-title">プランジャ速度 dx/dt</div>
+          <div class="readout-num" id="val-v" style="color:#e2e8f0;">0.00 m/s</div>
+        </div>
+        <div class="readout-item">
+          <div class="readout-title">速度起電力 e_v</div>
+          <div class="readout-num" id="val-ev" style="color:#f43f5e;">0.00 V</div>
         </div>
       </div>
     </div>
@@ -414,6 +410,7 @@ const phys = {
   F_preload: 1.2,
 
   i: 0.0,
+  i_diode: 0.0, // 還流ダイオード電流 i_D(t)
   x: 0.0,
   v: 0.0,
   gateOn: false,
@@ -478,6 +475,9 @@ function stepPhysics(dt) {
   if (phys.i < 0) phys.i = 0;
   if (phys.x <= 0) { phys.x = 0; if (phys.v < 0) phys.v = 0; }
   if (phys.x >= phys.x_max) { phys.x = phys.x_max; if (phys.v > 0) phys.v = 0; }
+
+  // 還流ダイオード電流の算出：MOSFETがOFFでコイル電流が正のときのみ還流ダイオードに流れる
+  phys.i_diode = (!phys.gateOn && phys.i > 0) ? phys.i : 0.0;
 
   phys.simTime += dt;
 }
@@ -1104,7 +1104,7 @@ springMesh.position.set(springRetainerX, 0.2, 0);
 solGroup.add(springMesh);
 
 // =========================================================
-// 4. リアルタイムオシロスコープ描画（縦軸目盛り＋現在値タグ付き）
+// 4. リアルタイムオシロスコープ描画（還流ダイオード電流 i_D 追加）
 // =========================================================
 const scopeContainer = document.getElementById('scope-container');
 const scopeCanvas = document.getElementById('scope-canvas');
@@ -1114,6 +1114,7 @@ const historyLen = 360;
 const hist = {
   gate: new Array(historyLen).fill(0),
   i: new Array(historyLen).fill(0),
+  id: new Array(historyLen).fill(0), // 還流ダイオード電流履歴
   x: new Array(historyLen).fill(0),
   L: new Array(historyLen).fill(32)
 };
@@ -1121,12 +1122,14 @@ const hist = {
 function pushHistory() {
   hist.gate.push(phys.gateOn ? 1 : 0);
   hist.i.push(phys.i);
+  hist.id.push(phys.i_diode);
   hist.x.push(phys.x * 1000);
   hist.L.push(getL(phys.x) * 1000);
 
   if (hist.gate.length > historyLen) {
     hist.gate.shift();
     hist.i.shift();
+    hist.id.shift();
     hist.x.shift();
     hist.L.shift();
   }
@@ -1148,7 +1151,7 @@ function drawScope() {
   sCtx.fillStyle = '#090d16';
   sCtx.fillRect(0, 0, W, H);
 
-  const padL = 48, padR = 115, padT = 24, padB = 14;
+  const padL = 48, padR = 135, padT = 26, padB = 14;
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
 
@@ -1191,37 +1194,50 @@ function drawScope() {
     return lastPy;
   }
 
-  drawTrace(hist.gate, 0, 1.15, 'rgba(148, 163, 184, 0.35)', 1.5);
+  // 1. Gate信号
+  drawTrace(hist.gate, 0, 1.15, 'rgba(148, 163, 184, 0.32)', 1.5);
+  // 2. インダクタンス L(x)
   const pyL = drawTrace(hist.L, 25, 165, '#c084fc', 1.8);
+  // 3. プランジャ変位 x(t)
   const pyX = drawTrace(hist.x, 0, maxX, '#34d399', 2.4);
-  const pyI = drawTrace(hist.i, 0, maxI, '#fb923c', 2.8);
+  // 4. コイル電流 i(t)（オレンジ太線）
+  const pyI = drawTrace(hist.i, 0, maxI, '#fb923c', 3.2);
+  // 5. 還流ダイオード電流 i_D(t)（水色実線：OFF時にコイル電流の上に重なって減衰を描く）
+  const pyId = drawTrace(hist.id, 0, maxI, '#38bdf8', 2.0);
 
-  // 右端の最新ポイントマーカー＆リアルタイム数値タグ
+  // 右端の最新ポイントマーカー（波形の先端ドット）
   const rightX = padL + plotW;
+  sCtx.fillStyle = '#c084fc'; sCtx.beginPath(); sCtx.arc(rightX, pyL, 3.5, 0, Math.PI * 2); sCtx.fill();
+  sCtx.fillStyle = '#34d399'; sCtx.beginPath(); sCtx.arc(rightX, pyX, 4.0, 0, Math.PI * 2); sCtx.fill();
+  sCtx.fillStyle = '#fb923c'; sCtx.beginPath(); sCtx.arc(rightX, pyI, 4.5, 0, Math.PI * 2); sCtx.fill();
+  sCtx.fillStyle = '#38bdf8'; sCtx.beginPath(); sCtx.arc(rightX, pyId, 3.5, 0, Math.PI * 2); sCtx.fill();
+
+  // 右側テレメトリ欄（文字が重ならないように等間隔で整列配置）
+  const labelX = rightX + 12;
+  const rowStep = Math.max(22, plotH / 4.2);
   sCtx.textAlign = 'left';
   sCtx.font = 'bold 12px monospace';
 
-  // 電流値タグ
   sCtx.fillStyle = '#fb923c';
-  sCtx.beginPath(); sCtx.arc(rightX, pyI, 4, 0, Math.PI * 2); sCtx.fill();
-  sCtx.fillText('i = ' + phys.i.toFixed(2) + ' A', rightX + 8, Math.max(padT + 10, Math.min(padT + plotH - 4, pyI + 4)));
+  sCtx.fillText('i   = ' + phys.i.toFixed(2) + ' A', labelX, padT + rowStep * 0.6);
 
-  // 変位タグ
+  sCtx.fillStyle = '#38bdf8';
+  sCtx.fillText('i_D = ' + phys.i_diode.toFixed(2) + ' A', labelX, padT + rowStep * 1.6);
+
   sCtx.fillStyle = '#34d399';
-  sCtx.beginPath(); sCtx.arc(rightX, pyX, 4, 0, Math.PI * 2); sCtx.fill();
-  sCtx.fillText('x = ' + (phys.x * 1000).toFixed(2) + ' mm', rightX + 8, Math.max(padT + 24, Math.min(padT + plotH - 4, pyX + 4)));
+  sCtx.fillText('x   = ' + (phys.x * 1000).toFixed(2) + ' mm', labelX, padT + rowStep * 2.6);
 
-  // インダクタンスタグ
   sCtx.fillStyle = '#c084fc';
-  sCtx.beginPath(); sCtx.arc(rightX, pyL, 3.5, 0, Math.PI * 2); sCtx.fill();
-  sCtx.fillText('L = ' + (getL(phys.x) * 1000).toFixed(0) + ' mH', rightX + 8, Math.max(padT + 38, Math.min(padT + plotH - 4, pyL + 4)));
+  sCtx.fillText('L   = ' + (getL(phys.x) * 1000).toFixed(0) + ' mH', labelX, padT + rowStep * 3.6);
 
   // 上部凡例ラベル
-  sCtx.font = 'bold 12px sans-serif';
-  sCtx.fillStyle = '#fb923c'; sCtx.fillText('■ コイル電流 i(t) [A]（ディップ発生）', padL, 16);
-  sCtx.fillStyle = '#34d399'; sCtx.fillText('■ プランジャ変位 x(t) [0〜8mm]', padL + 235, 16);
-  sCtx.fillStyle = '#c084fc'; sCtx.fillText('■ L(x) [32〜150mH]', padL + 430, 16);
-  sCtx.fillStyle = '#94a3b8'; sCtx.fillText('■ Gate ON/OFF', padL + 575, 16);
+  sCtx.font = 'bold 11.5px sans-serif';
+  let lx = padL;
+  sCtx.fillStyle = '#fb923c'; sCtx.fillText('■ コイル電流 i(t)', lx, 17); lx += 125;
+  sCtx.fillStyle = '#38bdf8'; sCtx.fillText('■ 還流ダイオード i_D(t)', lx, 17); lx += 155;
+  sCtx.fillStyle = '#34d399'; sCtx.fillText('■ 変位 x(t) [0〜8mm]', lx, 17); lx += 155;
+  sCtx.fillStyle = '#c084fc'; sCtx.fillText('■ L(x) [32〜150mH]', lx, 17); lx += 140;
+  sCtx.fillStyle = '#94a3b8'; sCtx.fillText('■ Gate', lx, 17);
 
   sCtx.restore();
 }
@@ -1353,23 +1369,23 @@ function animate(now) {
   document.getElementById('hud-i').textContent = phys.i.toFixed(2) + ' A';
   document.getElementById('bar-i').style.width = Math.min(100, (phys.i / maxI_ref) * 100) + '%';
 
+  document.getElementById('hud-id').textContent = phys.i_diode.toFixed(2) + ' A';
+  document.getElementById('bar-id').style.width = Math.min(100, (phys.i_diode / maxI_ref) * 100) + '%';
+
   document.getElementById('hud-x').textContent = x_mm.toFixed(2) + ' mm';
   document.getElementById('bar-x').style.width = Math.min(100, (x_mm / 8.0) * 100) + '%';
 
   document.getElementById('hud-L').textContent = L_mH.toFixed(1) + ' mH';
   document.getElementById('bar-L').style.width = Math.min(100, ((L_mH - 32) / 118) * 100) + '%';
 
-  document.getElementById('hud-F').textContent = F_mag.toFixed(2) + ' N';
-  document.getElementById('bar-F').style.width = Math.min(100, (F_mag / 15.0) * 100) + '%';
-
   // 右サイドパネル詳細計測値更新
   const e_vel = phys.i * dLdx * phys.v;
   const F_sp = phys.k * phys.x + phys.F_preload;
 
+  document.getElementById('val-F').textContent = F_mag.toFixed(2) + ' N';
+  document.getElementById('val-Fsp').textContent = F_sp.toFixed(2) + ' N';
   document.getElementById('val-v').textContent = phys.v.toFixed(2) + ' m/s';
   document.getElementById('val-ev').textContent = e_vel.toFixed(2) + ' V';
-  document.getElementById('val-Fsp').textContent = F_sp.toFixed(2) + ' N';
-  document.getElementById('val-P').textContent = powerLoss.toFixed(2) + ' W';
 
   controls.update();
   renderer.render(scene, camera);
