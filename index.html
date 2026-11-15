@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>3D ソレノイド駆動回路テストベンチ・シミュレータ</title>
 <meta name="twitter:card" content="summary_large_image">
 <meta property="og:title" content="3Dソレノイド電気・機械連成シミュレータ">
@@ -22,24 +23,27 @@
     overflow: hidden;
   }
   header {
-    height: 46px;
+    min-height: 44px;
     flex-shrink: 0;
     background: #1e293b;
-    padding: 0 18px;
+    padding: 6px 16px;
     border-bottom: 1px solid #334155;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
   }
   header h1 {
     margin: 0;
-    font-size: 15.5px;
+    font-size: 15px;
     font-weight: bold;
     color: #38bdf8;
+    line-height: 1.3;
   }
   header .sub {
-    font-size: 12px;
+    font-size: 11.5px;
     color: #94a3b8;
+    white-space: nowrap;
   }
   .main-container {
     display: flex;
@@ -61,37 +65,39 @@
     overflow: hidden;
     background: radial-gradient(circle at center, #1e293b 0%, #090e1a 100%);
     cursor: grab;
+    touch-action: none;
   }
   #three-container:active { cursor: grabbing; }
 
   /* 左上：回路状態バッジ */
   .overlay-badge {
     position: absolute;
-    top: 12px;
-    left: 14px;
+    top: 10px;
+    left: 12px;
     z-index: 10;
-    background: rgba(15, 23, 42, 0.90);
+    background: rgba(15, 23, 42, 0.88);
     border: 1px solid #334155;
     border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 12px;
-    line-height: 1.5;
+    padding: 7px 10px;
+    font-size: 11.5px;
+    line-height: 1.45;
     pointer-events: none;
+    max-width: calc(100% - 250px);
   }
 
   /* 右上：大型リアルタイム数値HUD */
   .telemetry-hud {
     position: absolute;
-    top: 12px;
-    right: 14px;
+    top: 10px;
+    right: 12px;
     z-index: 10;
     background: rgba(9, 13, 22, 0.88);
     border: 1px solid #334155;
     border-radius: 10px;
-    padding: 10px 14px;
+    padding: 8px 12px;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px 16px;
+    gap: 6px 14px;
     pointer-events: none;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   }
@@ -100,24 +106,24 @@
     flex-direction: column;
   }
   .hud-label {
-    font-size: 11px;
+    font-size: 10.5px;
     color: #94a3b8;
     font-weight: bold;
     letter-spacing: 0.02em;
   }
   .hud-value {
     font-family: "Consolas", "Monaco", monospace;
-    font-size: 21px;
+    font-size: 19px;
     font-weight: bold;
     line-height: 1.2;
-    margin-top: 2px;
+    margin-top: 1px;
   }
   .hud-bar-bg {
     width: 100%;
     height: 4px;
     background: #1e293b;
     border-radius: 2px;
-    margin-top: 4px;
+    margin-top: 3px;
     overflow: hidden;
   }
   .hud-bar-fill {
@@ -129,19 +135,22 @@
   /* 左下：視点切り替えボタン */
   .cam-presets {
     position: absolute;
-    bottom: 12px;
-    left: 14px;
+    bottom: 10px;
+    left: 12px;
+    right: 12px;
     z-index: 10;
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
+    pointer-events: none;
   }
   .cam-presets button {
+    pointer-events: auto;
     background: rgba(30, 41, 59, 0.92);
     border: 1px solid #475569;
     color: #e2e8f0;
-    padding: 6px 12px;
-    font-size: 12px;
+    padding: 6px 10px;
+    font-size: 11.5px;
     border-radius: 6px;
   }
   .cam-presets button:hover {
@@ -151,11 +160,11 @@
 
   .status-pill {
     display: inline-block;
-    padding: 2px 8px;
+    padding: 2px 7px;
     border-radius: 4px;
     font-weight: bold;
-    font-size: 11px;
-    margin-left: 6px;
+    font-size: 10.5px;
+    margin-left: 4px;
   }
   .pill-on { background: #ea580c; color: #fff; }
   .pill-off { background: #0284c7; color: #fff; }
@@ -212,7 +221,7 @@
     background: #2563eb;
     color: #fff;
     border: none;
-    padding: 7px 8px;
+    padding: 8px 8px;
     border-radius: 6px;
     font-size: 12px;
     font-weight: bold;
@@ -224,13 +233,13 @@
   button.secondary:hover { background: #475569; }
   button.active-mode { background: #ea580c; }
 
-  .slider-row { margin-bottom: 7px; }
+  .slider-row { margin-bottom: 8px; }
   .slider-row:last-child { margin-bottom: 0; }
   .slider-label {
     display: flex;
     justify-content: space-between;
-    font-size: 11.5px;
-    margin-bottom: 2px;
+    font-size: 12px;
+    margin-bottom: 3px;
   }
   .slider-val {
     font-family: monospace;
@@ -239,6 +248,7 @@
   }
   input[type="range"] {
     width: 100%;
+    height: 22px;
     accent-color: #38bdf8;
     cursor: pointer;
   }
@@ -252,7 +262,7 @@
     padding: 6px 8px;
     border-radius: 6px;
   }
-  .readout-title { font-size: 10px; color: #94a3b8; }
+  .readout-title { font-size: 10.5px; color: #94a3b8; }
   .readout-num {
     font-family: monospace;
     font-size: 14px;
@@ -265,6 +275,99 @@
     color: #cbd5e1;
     font-family: "Times New Roman", serif;
   }
+
+  /* =========================================================
+     スマートフォン・狭幅画面向けレスポンシブレイアウト (820px以下)
+     ========================================================= */
+  @media (max-width: 820px) {
+    html, body {
+      height: auto;
+      min-height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    header {
+      padding: 8px 12px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+    header h1 {
+      font-size: 13.5px;
+    }
+    header .sub {
+      font-size: 10.5px;
+    }
+    .main-container {
+      flex-direction: column;
+      overflow: visible;
+      flex: none;
+    }
+    .view-area {
+      flex: none;
+      width: 100%;
+    }
+    #three-container {
+      height: 44vh;
+      min-height: 270px;
+      max-height: 360px;
+    }
+    .overlay-badge {
+      top: 6px;
+      left: 6px;
+      padding: 4px 7px;
+      font-size: 10px;
+      max-width: 52%;
+    }
+    .badge-detail {
+      display: none;
+    }
+    #freq-status {
+      font-size: 9.5px !important;
+      margin-top: 2px !important;
+    }
+    .telemetry-hud {
+      top: 6px;
+      right: 6px;
+      padding: 5px 8px;
+      gap: 4px 8px;
+    }
+    .hud-label {
+      font-size: 9px;
+    }
+    .hud-value {
+      font-size: 13.5px;
+    }
+    .hud-bar-bg {
+      height: 3px;
+      margin-top: 2px;
+    }
+    .cam-presets {
+      bottom: 6px;
+      left: 6px;
+      right: 6px;
+      gap: 4px;
+    }
+    .cam-presets button {
+      padding: 5px 8px;
+      font-size: 10.5px;
+    }
+    #scope-container {
+      height: 220px;
+      flex: none;
+    }
+    .control-panel {
+      width: 100%;
+      border-left: none;
+      border-top: 1px solid #334155;
+      padding: 10px 12px 24px 12px;
+      overflow-y: visible;
+    }
+    button {
+      padding: 10px 8px;
+      font-size: 13px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -273,7 +376,7 @@
   <div>
     <h1>ソレノイド駆動回路 3Dテストベンチ（電気・機械連成シミュレータ）</h1>
   </div>
-  <div class="sub">マウスドラッグで回転・ホイールでズーム</div>
+  <div class="sub">ドラッグ/指で回転・ピンチ/ホイールでズーム</div>
 </header>
 
 <div class="main-container">
@@ -281,11 +384,11 @@
     <div id="three-container">
       <!-- 左上：回路動作モード表示 -->
       <div class="overlay-badge">
-        <div>回路状態: <span id="mode-badge" class="status-pill pill-idle">待機中 (OFF)</span></div>
+        <div>状態: <span id="mode-badge" class="status-pill pill-idle">待機中 (OFF)</span></div>
         <div id="freq-status" style="margin-top:3px; color:#38bdf8; font-family:monospace; font-size:11.5px;">
           連続パルス設定: 3.8 Hz (周期 263 ms / Duty 35%)
         </div>
-        <div style="margin-top:2px; color:#cbd5e1;">
+        <div class="badge-detail" style="margin-top:2px; color:#cbd5e1;">
           <span style="color:#fb923c;">●</span> <b>ON時</b>: 電源(+) → <b>抵抗R</b> → コイルL → MOSFET(D→S) → GND(-)<br>
           <span style="color:#38bdf8;">●</span> <b>OFF時</b>: コイルL → 還流ダイオード(A→K) → <b>抵抗R</b> → コイルL 循環減衰
         </div>
@@ -299,17 +402,17 @@
           <div class="hud-bar-bg"><div class="hud-bar-fill" id="bar-i" style="background:#fb923c;"></div></div>
         </div>
         <div class="hud-cell">
-          <span class="hud-label">還流ダイオード i_D(t)</span>
+          <span class="hud-label">還流電流 i_D(t)</span>
           <span class="hud-value" id="hud-id" style="color:#38bdf8;">0.00 A</span>
           <div class="hud-bar-bg"><div class="hud-bar-fill" id="bar-id" style="background:#38bdf8;"></div></div>
         </div>
         <div class="hud-cell">
-          <span class="hud-label">プランジャ変位 x(t)</span>
+          <span class="hud-label">変位 x(t)</span>
           <span class="hud-value" id="hud-x" style="color:#34d399;">0.00 mm</span>
           <div class="hud-bar-bg"><div class="hud-bar-fill" id="bar-x" style="background:#34d399;"></div></div>
         </div>
         <div class="hud-cell">
-          <span class="hud-label">インダクタンス L(x)</span>
+          <span class="hud-label">L(x)</span>
           <span class="hud-value" id="hud-L" style="color:#c084fc;">32.0 mH</span>
           <div class="hud-bar-bg"><div class="hud-bar-fill" id="bar-L" style="background:#c084fc;"></div></div>
         </div>
@@ -317,9 +420,9 @@
 
       <!-- 左下：視点プリセット -->
       <div class="cam-presets">
-        <button onclick="setCameraView('bench')">テストベンチ全体</button>
-        <button onclick="setCameraView('pcb')">駆動回路基板アップ（R・D・MOSFET）</button>
-        <button onclick="setCameraView('solenoid')">ソレノイド＆ばね機構アップ</button>
+        <button onclick="setCameraView('bench')">全体ビュー</button>
+        <button onclick="setCameraView('pcb')">駆動基板アップ</button>
+        <button onclick="setCameraView('solenoid')">ソレノイドアップ</button>
       </div>
     </div>
 
@@ -439,9 +542,8 @@ let autoPulseMode = false;
 let autoClock = 0;
 let manualHold = false;
 
-// ★スイッチング周波数・デューティ比設定
-let pulseFreq = 3.8;   // Hz (1.0 .. 10.0)
-let pulseDuty = 0.35;  // 0.20 .. 0.80
+let pulseFreq = 3.8;
+let pulseDuty = 0.35;
 
 function getL(x) {
   const ratio = Math.max(0, Math.min(1, x / phys.x_max));
@@ -542,7 +644,7 @@ function updateFreqReadout() {
   document.getElementById('lbl-freq').textContent = `${pulseFreq.toFixed(1)} Hz (${periodMs} ms)`;
   document.getElementById('lbl-duty').textContent = `${dutyPct} %`;
   document.getElementById('freq-status').textContent =
-    `連続パルス設定: ${pulseFreq.toFixed(1)} Hz (周期 ${periodMs} ms / Duty ${dutyPct}%)`;
+    `パルス設定: ${pulseFreq.toFixed(1)} Hz (${periodMs}ms / Duty ${dutyPct}%)`;
 }
 
 document.getElementById('inp-freq').addEventListener('input', e => {
@@ -581,7 +683,7 @@ const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 container.appendChild(renderer.domElement);
 
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -598,14 +700,16 @@ function resizeThree() {
 }
 
 function setCameraView(mode) {
+  const isMobile = window.innerWidth <= 820;
   if (mode === 'solenoid') {
-    camera.position.set(1.9, 0.9, 4.4);
+    camera.position.set(1.9, 0.9, isMobile ? 5.6 : 4.4);
     controls.target.set(1.9, 0.15, 0.0);
   } else if (mode === 'pcb') {
-    camera.position.set(-2.1, 2.35, 3.05);
+    camera.position.set(-2.1, isMobile ? 2.8 : 2.35, isMobile ? 3.6 : 3.05);
     controls.target.set(-2.1, -0.85, 1.15);
   } else {
-    camera.position.set(0.25, 2.95, 6.2);
+    // スマホ縦画面ではカメラを少し引いてテストベンチ全体が左右に切れないように調整
+    camera.position.set(0.25, isMobile ? 3.6 : 2.95, isMobile ? 8.8 : 6.2);
     controls.target.set(0.25, -0.15, 0.25);
   }
   controls.update();
@@ -743,7 +847,6 @@ function addSilkLabel(text, x, z, w, h, textColor = '#f8fafc', fontSize = 22) {
   return m;
 }
 
-// 1. 上部レール (+12V IN → 分岐ノード → 抵抗 R → COIL+)
 addTraceBox(-0.85, -0.52, 0.80, 0.07, 0xef4444);
 addTraceBox(-0.45, -0.34, 0.07, 0.36, 0xef4444);
 addTraceBox(-0.20, -0.52, 0.50, 0.07, 0xfbbf24);
@@ -799,7 +902,6 @@ function updateResistorLabel() {
   resLabelMat.needsUpdate = true;
 }
 
-// 2. 中央ノード (COIL- / DRAIN)
 addTraceBox(0.40, 0.16, 1.70, 0.07, 0xf59e0b);
 addTraceBox(-0.45, -0.01, 0.07, 0.34, 0xf59e0b);
 addTraceBox(0.55, 0.25, 0.07, 0.18, 0xf59e0b);
@@ -812,12 +914,10 @@ const nodeJoint = new THREE.Mesh(
 nodeJoint.position.set(0.55, 0.052, 0.16);
 pcbGroup.add(nodeJoint);
 
-// 3. 下部レール (GND)
 addTraceBox(-0.25, 0.68, 1.90, 0.07, 0x94a3b8);
 addTraceBox(0.68, 0.56, 0.07, 0.24, 0x94a3b8);
 addSilkLabel('GND OUT', -1.05, 0.56, 0.68, 0.15, '#cbd5e1', 22);
 
-// 4. ゲート制御信号パターン (GATE)
 const gateTraceMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 });
 const gateTrace = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.016, 0.05), gateTraceMat);
 gateTrace.position.set(-0.18, 0.048, 0.44);
@@ -831,7 +931,6 @@ const gateRes = new THREE.Mesh(
 gateRes.position.set(-0.15, 0.08, 0.44);
 pcbGroup.add(gateRes);
 
-// 還流ダイオード (Flyback Diode)
 const diodeGroup = new THREE.Group();
 diodeGroup.position.set(-0.45, 0.16, -0.17);
 pcbGroup.add(diodeGroup);
@@ -851,7 +950,6 @@ diodeGroup.add(cathodeBand);
 
 addSilkLabel('▲ Flyback D', -0.96, -0.17, 0.85, 0.18, '#38bdf8', 22);
 
-// ローサイド Nch MOSFET
 const mosfetGroup = new THREE.Group();
 mosfetGroup.position.set(0.55, 0.26, 0.40);
 pcbGroup.add(mosfetGroup);
@@ -911,13 +1009,13 @@ const pathOnCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(-3.52, -0.67, -0.10),
   new THREE.Vector3(-3.35, -0.88, 0.63),
   new THREE.Vector3(-2.55, -0.88, 0.63),
-  new THREE.Vector3(-1.70, -0.78, 0.63), // 抵抗 R
+  new THREE.Vector3(-1.70, -0.78, 0.63),
   new THREE.Vector3(-0.85, -0.88, 0.63),
   new THREE.Vector3(-0.25,  0.15, 0.45),
   new THREE.Vector3( 1.85,  0.15, 0.45),
   new THREE.Vector3(-0.85, -0.88, 1.31),
   new THREE.Vector3(-1.55, -0.88, 1.31),
-  new THREE.Vector3(-1.55, -0.78, 1.55), // MOSFET
+  new THREE.Vector3(-1.55, -0.78, 1.55),
   new THREE.Vector3(-1.42, -0.88, 1.83),
   new THREE.Vector3(-3.35, -0.88, 1.83),
   new THREE.Vector3(-3.75, -0.85, 1.00),
@@ -929,9 +1027,9 @@ const pathOffCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(-0.85, -0.88, 1.31),
   new THREE.Vector3(-1.55, -0.88, 1.31),
   new THREE.Vector3(-2.55, -0.88, 1.31),
-  new THREE.Vector3(-2.55, -0.76, 0.98), // 還流ダイオード
+  new THREE.Vector3(-2.55, -0.76, 0.98),
   new THREE.Vector3(-2.55, -0.88, 0.63),
-  new THREE.Vector3(-1.70, -0.78, 0.63), // 抵抗 R
+  new THREE.Vector3(-1.70, -0.78, 0.63),
   new THREE.Vector3(-0.85, -0.88, 0.63),
   new THREE.Vector3(-0.25,  0.15, 0.45)
 ], true);
@@ -1140,13 +1238,13 @@ springMesh.position.set(springRetainerX, 0.2, 0);
 solGroup.add(springMesh);
 
 // =========================================================
-// 4. リアルタイムオシロスコープ描画
+// 4. リアルタイムオシロスコープ描画（スマホ狭幅対応）
 // =========================================================
 const scopeContainer = document.getElementById('scope-container');
 const scopeCanvas = document.getElementById('scope-canvas');
 const sCtx = scopeCanvas.getContext('2d');
 
-const historyLen = 360;
+const historyLen = 320;
 const hist = {
   gate: new Array(historyLen).fill(0),
   i: new Array(historyLen).fill(0),
@@ -1172,7 +1270,7 @@ function pushHistory() {
 }
 
 function drawScope() {
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const W = scopeContainer.clientWidth;
   const H = scopeContainer.clientHeight;
   if (W <= 0 || H <= 0) return;
@@ -1187,13 +1285,18 @@ function drawScope() {
   sCtx.fillStyle = '#090d16';
   sCtx.fillRect(0, 0, W, H);
 
-  const padL = 48, padR = 135, padT = 26, padB = 14;
-  const plotW = W - padL - padR;
-  const plotH = H - padT - padB;
+  const isMobile = W <= 640;
+  const padL = isMobile ? 36 : 48;
+  const padR = isMobile ? 96 : 135;
+  const padT = isMobile ? 34 : 26;
+  const padB = 12;
+  const plotW = Math.max(80, W - padL - padR);
+  const plotH = Math.max(60, H - padT - padB);
 
   sCtx.strokeStyle = '#1e293b';
   sCtx.lineWidth = 1;
-  for (let gx = padL; gx <= padL + plotW; gx += 50) {
+  const gridStepX = isMobile ? 40 : 50;
+  for (let gx = padL; gx <= padL + plotW; gx += gridStepX) {
     sCtx.beginPath(); sCtx.moveTo(gx, padT); sCtx.lineTo(gx, padT + plotH); sCtx.stroke();
   }
   for (let r = 0; r <= 4; r++) {
@@ -1204,12 +1307,12 @@ function drawScope() {
   const maxI = Math.max(2.0, (phys.V_sup / phys.R) * 1.25);
   const maxX = 8.8;
 
-  sCtx.font = 'bold 11px monospace';
+  sCtx.font = isMobile ? 'bold 10px monospace' : 'bold 11px monospace';
   sCtx.fillStyle = '#fb923c';
   sCtx.textAlign = 'right';
-  sCtx.fillText(maxI.toFixed(1) + 'A', padL - 6, padT + 8);
-  sCtx.fillText((maxI / 2).toFixed(1) + 'A', padL - 6, padT + plotH / 2 + 4);
-  sCtx.fillText('0.0A', padL - 6, padT + plotH);
+  sCtx.fillText(maxI.toFixed(1) + 'A', padL - 4, padT + 8);
+  sCtx.fillText((maxI / 2).toFixed(1) + 'A', padL - 4, padT + plotH / 2 + 4);
+  sCtx.fillText('0.0A', padL - 4, padT + plotH);
 
   function drawTrace(data, minVal, maxVal, color, lineWidth = 2.2) {
     sCtx.strokeStyle = color;
@@ -1231,7 +1334,7 @@ function drawScope() {
   drawTrace(hist.gate, 0, 1.15, 'rgba(148, 163, 184, 0.32)', 1.5);
   const pyL = drawTrace(hist.L, 25, 165, '#c084fc', 1.8);
   const pyX = drawTrace(hist.x, 0, maxX, '#34d399', 2.4);
-  const pyI = drawTrace(hist.i, 0, maxI, '#fb923c', 3.2);
+  const pyI = drawTrace(hist.i, 0, maxI, '#fb923c', 3.0);
   const pyId = drawTrace(hist.id, 0, maxI, '#38bdf8', 2.0);
 
   const rightX = padL + plotW;
@@ -1240,30 +1343,40 @@ function drawScope() {
   sCtx.fillStyle = '#fb923c'; sCtx.beginPath(); sCtx.arc(rightX, pyI, 4.5, 0, Math.PI * 2); sCtx.fill();
   sCtx.fillStyle = '#38bdf8'; sCtx.beginPath(); sCtx.arc(rightX, pyId, 3.5, 0, Math.PI * 2); sCtx.fill();
 
-  const labelX = rightX + 12;
-  const rowStep = Math.max(22, plotH / 4.2);
+  const labelX = rightX + (isMobile ? 8 : 12);
+  const rowStep = Math.max(20, plotH / 4.2);
   sCtx.textAlign = 'left';
-  sCtx.font = 'bold 12px monospace';
+  sCtx.font = isMobile ? 'bold 10.5px monospace' : 'bold 12px monospace';
 
   sCtx.fillStyle = '#fb923c';
-  sCtx.fillText('i   = ' + phys.i.toFixed(2) + ' A', labelX, padT + rowStep * 0.6);
+  sCtx.fillText('i  =' + phys.i.toFixed(2) + 'A', labelX, padT + rowStep * 0.6);
 
   sCtx.fillStyle = '#38bdf8';
-  sCtx.fillText('i_D = ' + phys.i_diode.toFixed(2) + ' A', labelX, padT + rowStep * 1.6);
+  sCtx.fillText('i_D=' + phys.i_diode.toFixed(2) + 'A', labelX, padT + rowStep * 1.6);
 
   sCtx.fillStyle = '#34d399';
-  sCtx.fillText('x   = ' + (phys.x * 1000).toFixed(2) + ' mm', labelX, padT + rowStep * 2.6);
+  sCtx.fillText('x  =' + (phys.x * 1000).toFixed(2) + 'mm', labelX, padT + rowStep * 2.6);
 
   sCtx.fillStyle = '#c084fc';
-  sCtx.fillText('L   = ' + (getL(phys.x) * 1000).toFixed(0) + ' mH', labelX, padT + rowStep * 3.6);
+  sCtx.fillText('L  =' + (getL(phys.x) * 1000).toFixed(0) + 'mH', labelX, padT + rowStep * 3.6);
 
-  sCtx.font = 'bold 11.5px sans-serif';
-  let lx = padL;
-  sCtx.fillStyle = '#fb923c'; sCtx.fillText('■ コイル電流 i(t)', lx, 17); lx += 125;
-  sCtx.fillStyle = '#38bdf8'; sCtx.fillText('■ 還流ダイオード i_D(t)', lx, 17); lx += 155;
-  sCtx.fillStyle = '#34d399'; sCtx.fillText('■ 変位 x(t) [0〜8mm]', lx, 17); lx += 155;
-  sCtx.fillStyle = '#c084fc'; sCtx.fillText('■ L(x) [32〜150mH]', lx, 17); lx += 140;
-  sCtx.fillStyle = '#94a3b8'; sCtx.fillText('■ Gate', lx, 17);
+  if (isMobile) {
+    // スマホでは凡例を2段に折り返して見やすく配置
+    sCtx.font = 'bold 10px sans-serif';
+    sCtx.fillStyle = '#fb923c'; sCtx.fillText('■ 電流 i(t)', padL, 12);
+    sCtx.fillStyle = '#38bdf8'; sCtx.fillText('■ 還流 i_D(t)', padL + 82, 12);
+    sCtx.fillStyle = '#34d399'; sCtx.fillText('■ 変位 x(t)', padL, 25);
+    sCtx.fillStyle = '#c084fc'; sCtx.fillText('■ L(x)', padL + 82, 25);
+    sCtx.fillStyle = '#94a3b8'; sCtx.fillText('■ Gate', padL + 135, 25);
+  } else {
+    sCtx.font = 'bold 11.5px sans-serif';
+    let lx = padL;
+    sCtx.fillStyle = '#fb923c'; sCtx.fillText('■ コイル電流 i(t)', lx, 17); lx += 125;
+    sCtx.fillStyle = '#38bdf8'; sCtx.fillText('■ 還流ダイオード i_D(t)', lx, 17); lx += 155;
+    sCtx.fillStyle = '#34d399'; sCtx.fillText('■ 変位 x(t) [0〜8mm]', lx, 17); lx += 155;
+    sCtx.fillStyle = '#c084fc'; sCtx.fillText('■ L(x) [32〜150mH]', lx, 17); lx += 140;
+    sCtx.fillStyle = '#94a3b8'; sCtx.fillText('■ Gate', lx, 17);
+  }
 
   sCtx.restore();
 }
@@ -1377,16 +1490,16 @@ function animate(now) {
   const badge = document.getElementById('mode-badge');
   if (phys.gateOn) {
     badge.textContent = autoPulseMode
-      ? `MOSFET ON（連続 ${pulseFreq.toFixed(1)}Hz 駆動中）`
-      : 'MOSFET ON（電源 → 抵抗R → コイルL → MOSFET 駆動中）';
+      ? `MOSFET ON (${pulseFreq.toFixed(1)}Hz)`
+      : 'MOSFET ON（駆動中）';
     badge.className = 'status-pill pill-on';
   } else if (phys.i > 0.015) {
     badge.textContent = autoPulseMode
-      ? `MOSFET OFF（還流ダイオード減衰中 / ${pulseFreq.toFixed(1)}Hz）`
-      : 'MOSFET OFF（還流ダイオード導通 → 抵抗R で減衰中）';
+      ? `還流減衰 (${pulseFreq.toFixed(1)}Hz)`
+      : 'MOSFET OFF（還流減衰中）';
     badge.className = 'status-pill pill-off';
   } else {
-    badge.textContent = '待機中 (OFF / 電流ゼロ)';
+    badge.textContent = '待機中 (OFF)';
     badge.className = 'status-pill pill-idle';
   }
 
