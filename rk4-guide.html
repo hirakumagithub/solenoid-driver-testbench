@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ソレノイド電気・機械連成系の数値計算アルゴリズム解説（全4枚スライド＋RK4アニメーション）</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    background: #0f172a;
+    color: #1e293b;
+    font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+
+  /* 16:9 スライドフレーム (1280 x 720) */
+  .slide {
+    width: 1280px;
+    height: 720px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+    padding: 32px 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* スライド上部アクセントバー */
+  .slide::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: linear-gradient(90deg, #0284c7, #38bdf8, #f59e0b);
+  }
+
+  .slide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 9px;
+  }
+  .slide-tag {
+    display: inline-block;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-weight: bold;
+    font-size: 13px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+  .slide-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+    color: #0f172a;
+  }
+  .slide-num {
+    font-family: monospace;
+    font-size: 16px;
+    font-weight: bold;
+    color: #64748b;
+  }
+
+  .slide-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-top: 14px;
+    gap: 13px;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    flex: 1;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+
+  .box {
+    background: #f8fafc;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 15px 19px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .box.blue {
+    background: #f0f9ff;
+    border-color: #7dd3fc;
+  }
+  .box.orange {
+    background: #fffbeb;
+    border-color: #fcd34d;
+  }
+  .box.green {
+    background: #f0fdf4;
+    border-color: #86efac;
+  }
+
+  .box-title {
+    font-size: 16.5px;
+    font-weight: bold;
+    color: #0f172a;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge-num {
+    background: #0284c7;
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .orange .badge-num { background: #d97706; }
+  .green .badge-num { background: #16a34a; }
+
+  .math-card {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-family: "Times New Roman", "Cambria Math", serif;
+    font-size: 18.5px;
+    line-height: 1.5;
+    color: #0f172a;
+    margin: 5px 0;
+  }
+  .math-sub {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 12.5px;
+    color: #475569;
+  }
+
+  ul.clean-list {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: #334155;
+  }
+  ul.clean-list li { margin-bottom: 6px; }
+
+  /* バナーと右端バッジ */
+  .highlight-banner {
+    background: #1e293b;
+    color: #f8fafc;
+    border-radius: 8px;
+    padding: 11px 18px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .highlight-banner .banner-text {
+    flex: 1;
+    line-height: 1.4;
+  }
+  .highlight-banner b { color: #38bdf8; }
+  .banner-pill {
+    flex-shrink: 0;
+    font-family: monospace;
+    font-size: 13px;
+    font-weight: bold;
+    color: #e0f2fe;
+    background: #0f172a;
+    border: 1px solid #38bdf8;
+    padding: 5px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  /* SLIDE 2: バケツリレー図解 */
+  .relay-container {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .relay-node {
+    flex: 1;
+    background: #ffffff;
+    border: 2px solid #0284c7;
+    border-radius: 10px;
+    padding: 12px 13px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .relay-node.init {
+    border-color: #d97706;
+    background: #fffbeb;
+  }
+  .relay-time {
+    font-family: monospace;
+    font-size: 12.5px;
+    font-weight: bold;
+    color: #0369a1;
+    background: #e0f2fe;
+    padding: 2px 7px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 6px;
+  }
+  .relay-node.init .relay-time {
+    color: #b45309;
+    background: #fef3c7;
+  }
+  .relay-state {
+    font-family: "Times New Roman", serif;
+    font-size: 16.5px;
+    font-weight: bold;
+    color: #0f172a;
+    margin: 4px 0;
+  }
+  .relay-desc {
+    font-size: 12.5px;
+    color: #475569;
+    line-height: 1.45;
+  }
+  .relay-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 105px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .arrow-badge {
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px 7px;
+    border-radius: 6px;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+  .arrow-badge.ellipsis { background: #64748b; }
+  .arrow-symbol {
+    font-size: 24px;
+    font-weight: bold;
+    color: #0284c7;
+    line-height: 1;
+  }
+
+  .calc-pipe {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 13px 16px;
+  }
+  .pipe-step {
+    flex: 1;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .pipe-step.highlight {
+    background: #f0f9ff;
+    border-color: #38bdf8;
+  }
+  .pipe-num {
+    font-size: 11.5px;
+    font-weight: bold;
+    color: #0284c7;
+    margin-bottom: 3px;
+  }
+  .pipe-title {
+    font-size: 14.5px;
+    font-weight: bold;
+    color: #0f172a;
+    margin-bottom: 4px;
+  }
+  .pipe-body {
+    font-size: 13px;
+    color: #334155;
+    line-height: 1.45;
+  }
+
+  /* SLIDE 3: RK4 ステップフロー */
+  .step-flow {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .step-item {
+    flex: 1;
+    background: #ffffff;
+    border: 1.5px solid #94a3b8;
+    border-radius: 8px;
+    padding: 11px 13px;
+  }
+  .step-item.accent {
+    border-color: #0284c7;
+    background: #f0f9ff;
+  }
+  .step-head {
+    font-size: 13px;
+    font-weight: bold;
+    color: #0369a1;
+    margin-bottom: 4px;
+  }
+  .step-eq {
+    font-family: "Times New Roman", serif;
+    font-size: 16.5px;
+    font-weight: bold;
+    color: #0f172a;
+    margin: 4px 0;
+  }
+  .step-desc {
+    font-size: 12.5px;
+    color: #475569;
+    line-height: 1.4;
+  }
+
+  /* SLIDE 4: RK4 インタラクティブアニメーション用スタイル */
+  .anim-grid {
+    display: grid;
+    grid-template-columns: 1.42fr 1fr;
+    gap: 18px;
+    flex: 1;
+    min-height: 0;
+  }
+  .anim-canvas-wrap {
+    background: #090d16;
+    border: 1.5px solid #334155;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  canvas#rk4Canvas {
+    width: 100%;
+    height: 410px;
+    display: block;
+    border-radius: 6px;
+  }
+  .anim-bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 7px;
+    padding: 7px 12px;
+    margin-top: 8px;
+    color: #f8fafc;
+    font-size: 12px;
+  }
+  .anim-btn-group {
+    display: flex;
+    gap: 6px;
+  }
+  button.anim-btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    padding: 6px 11px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button.anim-btn:hover { background: #1d4ed8; }
+  button.anim-btn.secondary { background: #334155; }
+  button.anim-btn.secondary:hover { background: #475569; }
+  button.anim-btn.accent { background: #ea580c; }
+
+  .anim-err-group {
+    display: flex;
+    gap: 12px;
+    font-family: monospace;
+    font-size: 12.5px;
+  }
+
+  .anim-side {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 7px;
+  }
+  .anim-card {
+    background: #f8fafc;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 8px 12px;
+    transition: all 0.2s;
+    opacity: 0.65;
+  }
+  .anim-card.active {
+    opacity: 1.0;
+    background: #f0f9ff;
+    border-color: #0284c7;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+    transform: translateX(-3px);
+  }
+  .anim-card-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 2px;
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .anim-card-eq {
+    font-family: "Times New Roman", serif;
+    font-size: 14.5px;
+    font-weight: bold;
+    color: #0369a1;
+    margin-bottom: 2px;
+  }
+  .anim-card-desc {
+    font-size: 11.8px;
+    color: #334155;
+    line-height: 1.38;
+    margin: 0;
+  }
+
+  .slide-footer {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 7px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #64748b;
+  }
+</style>
+</head>
+<body>
+
+<!-- =====================================================================
+     SLIDE 1: なぜ解析的に解けないのか？＆状態空間モデルへの定式化
+     ===================================================================== -->
+<div class="slide" id="slide-1">
+  <div class="slide-header">
+    <div>
+      <div class="slide-tag">数値シミュレーション手法解説（1 / 4）</div>
+      <h1 class="slide-title">なぜ電流 i(t) は解析的に解けないのか？ ― 非線形連成系と状態方程式化</h1>
+    </div>
+    <div class="slide-num">SLIDE 01 / 04</div>
+  </div>
+
+  <div class="slide-body">
+    <div class="grid-2">
+      <div class="box orange">
+        <div>
+          <h2 class="box-title"><span class="badge-num">1</span>解析的（手計算）に解けない3つの理由</h2>
+          <p style="font-size:14.5px; color:#334155; margin:0 0 10px 0;">
+            固定インダクタンスのRL回路なら単純な指数関数 <span style="font-family:serif; font-size:17px;">i(t) = (V/R)(1 - e<sup>-(R/L)t</sup>)</span> で解けますが、可動鉄心ソレノイドは以下の非線形性を含みます。
+          </p>
+          <ul class="clean-list">
+            <li><b>インダクタンスの変位依存性 L(x)</b>：<br>ギャップが狭まるにつれ <span style="font-family:serif;">L(x)</span> が指数関数的に急増するため、係数が時間とともに変化する。</li>
+            <li><b>電流の2乗に比例する磁気吸引力</b>：<br>機械系の駆動力 <span style="font-family:serif;">F<sub>mag</sub> = ½ i² (dL/dx)</span> が電流 <span style="font-family:serif;">i</span> の2次式（非線形項）になっている。</li>
+            <li><b>電気系と機械系の双方向フィードバック</b>：<br>電流がプランジャを動かし（<span style="font-family:serif;">v = dx/dt</span>）、その速度が速度起電力 <span style="font-family:serif;">i(dL/dx)v</span> となって電流を押し戻す。</li>
+          </ul>
+        </div>
+        <div class="math-card" style="background:#fff; border-color:#f59e0b; text-align:center;">
+          <span style="font-size:14px; color:#b45309; font-family:sans-serif; font-weight:bold;">結論：初等関数による閉じた解析解が存在しない</span><br>
+          → 微小時間 <span style="font-style:italic;">Δt</span> ごとに状態を更新する<b>「数値積分」</b>が必須
+        </div>
+      </div>
+
+      <div class="box blue">
+        <div>
+          <h2 class="box-title"><span class="badge-num">2</span>数値計算のための「状態空間モデル」への変換</h2>
+          <p style="font-size:14.5px; color:#334155; margin:0 0 8px 0;">
+            数値積分ソルバーで扱えるよう、3つの状態変数 <span style="font-family:serif; font-size:17px;"><b>y</b> = [ i, x, v ]<sup>T</sup></span> の時間微分（1階連立常微分方程式）の形に整理します。
+          </p>
+
+          <div class="math-card">
+            <div class="math-sub">① 電流の変化率（電気回路方程式より）</div>
+            di/dt = { V<sub>eff</sub> − R·i − i·(dL/dx)·v } / L(x)
+          </div>
+
+          <div class="math-card">
+            <div class="math-sub">② 変位の変化率（速度の定義）</div>
+            dx/dt = v
+          </div>
+
+          <div class="math-card">
+            <div class="math-sub">③ 速度の変化率（ニュートンの運動方程式より）</div>
+            dv/dt = { ½ i² (dL/dx) − k(x + x<sub>0</sub>) − c·v } / m
+          </div>
+        </div>
+        <div style="font-size:13px; color:#0369a1; font-weight:bold; text-align:right;">
+          ※ L(x) と dL/dx はプランジャ位置 x だけで決まる既知の形状特性関数
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-banner">
+      <div class="banner-text">💡 <b>ポイント</b>：右辺に未知の微分値を含まないため、<b>「今の [i, x, v] を右辺に代入するだけ」</b>で次の瞬間の傾きが計算できます。</div>
+      <div class="banner-pill">State Vector: [i(t), x(t), v(t)]</div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>ソレノイド駆動回路 3Dテストベンチ ― 電気・機械連成数値解析アルゴリズム</span>
+    <span>State-Space Formulation</span>
+  </div>
+</div>
+
+<!-- =====================================================================
+     SLIDE 2: 時間の流れに沿った「バケツリレー」のイメージ
+     ===================================================================== -->
+<div class="slide" id="slide-2">
+  <div class="slide-header">
+    <div>
+      <div class="slide-tag">数値シミュレーション手法解説（2 / 4）</div>
+      <h1 class="slide-title">時間発展の「バケツリレー」イメージ ― 今の値から次の時刻を求める仕組み</h1>
+    </div>
+    <div class="slide-num">SLIDE 02 / 04</div>
+  </div>
+
+  <div class="slide-body">
+    <div class="box blue" style="padding:14px 20px;">
+      <h2 class="box-title"><span class="badge-num">3</span>微小時間 Δt（0.2 ms）ごとに状態を渡していくバケツリレー</h2>
+      <p style="font-size:14px; color:#334155; margin:0 0 6px 0;">
+        未来の式 <span style="font-family:serif;">i(t)</span> を一気に求めるのではなく、<b>「確定している今の値を使って傾きを出し、Δt 秒後の値を確定させて次へ渡す」</b>作業を <span style="font-family:serif;">t<sub>0</sub> → t<sub>1</sub> → t<sub>2</sub> … → t<sub>n</sub> → t<sub>n+1</sub></span> と繰り返します。
+      </p>
+
+      <div class="relay-container">
+        <div class="relay-node init">
+          <div>
+            <span class="relay-time">時刻 t<sub>0</sub> = 0（初期状態）</span>
+            <div class="relay-state">[ i(0), x(0), v(0) ] = [ 0, 0, 0 ]</div>
+          </div>
+          <div class="relay-desc">
+            スイッチON直前の静止状態。この初期値を右辺に代入し、最初の傾き（<span style="font-family:serif;">di/dt = V/L(0)</span>）を計算してスタート。
+          </div>
+        </div>
+
+        <div class="relay-arrow">
+          <div class="arrow-badge">右辺に代入<br>＋ Δt 更新</div>
+          <div class="arrow-symbol">➔</div>
+        </div>
+
+        <div class="relay-node">
+          <div>
+            <span class="relay-time">時刻 t<sub>1</sub> = Δt（1歩目）</span>
+            <div class="relay-state">[ i(t<sub>1</sub>), x(t<sub>1</sub>), v(t<sub>1</sub>) ]</div>
+          </div>
+          <div class="relay-desc">
+            <span style="font-family:serif;">0.2 ms</span> 後の確定値。次はこれが「新しい現在の値」となり、右辺へ代入されて <span style="font-family:serif;">t<sub>2</sub> = 2Δt</span> を求める。
+          </div>
+        </div>
+
+        <div class="relay-arrow">
+          <div class="arrow-badge ellipsis">同様に反復<br>（t<sub>2</sub>, t<sub>3</sub>, …）</div>
+          <div class="arrow-symbol" style="color:#64748b; font-size:20px;">••• ➔</div>
+        </div>
+
+        <div class="relay-node">
+          <div>
+            <span class="relay-time">時刻 t<sub>n</sub> = nΔt（現在）</span>
+            <div class="relay-state">[ i(t<sub>n</sub>), x(t<sub>n</sub>), v(t<sub>n</sub>) ]</div>
+          </div>
+          <div class="relay-desc">
+            前ステップ <span style="font-family:serif;">t<sub>n−1</sub></span> からバトンを受け取った確定済みの数値。これを再び右辺へ代入して次の傾きを出す。
+          </div>
+        </div>
+
+        <div class="relay-arrow">
+          <div class="arrow-badge">RK4で4回<br>傾きを平均</div>
+          <div class="arrow-symbol">➔</div>
+        </div>
+
+        <div class="relay-node" style="border-style:dashed; background:#f8fafc;">
+          <div>
+            <span class="relay-time">時刻 t<sub>n+1</sub> = t<sub>n</sub> + Δt</span>
+            <div class="relay-state">[ i(t<sub>n+1</sub>), x(t<sub>n+1</sub>), v(t<sub>n+1</sub>) ]</div>
+          </div>
+          <div class="relay-desc">
+            新たに確定した次の瞬間の値。1秒間に5,000回（<span style="font-family:serif;">Δt=0.2ms</span>）このバトンを繋ぎ、連続波形を描く。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="box" style="padding:14px 20px;">
+      <h2 class="box-title"><span class="badge-num" style="background:#475569;">4</span>1回のバトンパス（t<sub>n</sub> → t<sub>n+1</sub>）の内部で行っていること</h2>
+      <div class="calc-pipe">
+        <div class="pipe-step">
+          <div class="pipe-num">INPUT（手元にある確定値）</div>
+          <div class="pipe-title">① 今の数値を用意する</div>
+          <div class="pipe-body">現在の <span style="font-family:serif; font-weight:bold;">i, x, v</span> と、位置 <span style="font-family:serif;">x</span> から決まる <span style="font-family:serif;">L(x), dL/dx</span> を揃える。</div>
+        </div>
+        <div style="font-size:22px; color:#64748b; font-weight:bold;">▶</div>
+        <div class="pipe-step highlight">
+          <div class="pipe-num">CALCULATION（電卓レベルの四則演算）</div>
+          <div class="pipe-title">② 右辺に代入して「今の傾き」を出す</div>
+          <div class="pipe-body">
+            <span style="font-family:serif;">di/dt = {V<sub>eff</sub> − Ri − i(dL/dx)v} / L(x)</span><br>
+            掛け算と割り算だけで変化率（傾き）が即座に出る。
+          </div>
+        </div>
+        <div style="font-size:22px; color:#64748b; font-weight:bold;">▶</div>
+        <div class="pipe-step">
+          <div class="pipe-num">UPDATE（未来の値を確定）</div>
+          <div class="pipe-title">③ 傾き × Δt を足して次へ渡す</div>
+          <div class="pipe-body">求まった傾きに <span style="font-family:serif;">Δt</span> を掛けて現在の値に足し、<span style="font-family:serif; font-weight:bold;">i(t<sub>n+1</sub>)</span> を確定させる。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-banner">
+      <div class="banner-text">🔄 <b>なぜRK4が必要か？</b>：傾き1回だけで Δt 先へ進むとカーブで誤差が出るため、<b>1ステップ内で傾きを4回測り直します（次スライド）</b>。</div>
+      <div class="banner-pill">Step Loop: 5,000 steps / sec</div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>ソレノイド駆動回路 3Dテストベンチ ― 電気・機械連成数値解析アルゴリズム</span>
+    <span>Time-Stepping Relay Concept</span>
+  </div>
+</div>
+
+<!-- =====================================================================
+     SLIDE 3: 4次ルンゲ＝クッタ法（RK4）の計算ステップと境界条件
+     ===================================================================== -->
+<div class="slide" id="slide-3">
+  <div class="slide-header">
+    <div>
+      <div class="slide-tag">数値シミュレーション手法解説（3 / 4）</div>
+      <h1 class="slide-title">4次ルンゲ＝クッタ法（RK4）の計算ステップ（Δt = 0.2 ms）と境界条件</h1>
+    </div>
+    <div class="slide-num">SLIDE 03 / 04</div>
+  </div>
+
+  <div class="slide-body">
+    <div class="box blue" style="padding:14px 20px;">
+      <h2 class="box-title"><span class="badge-num">5</span>1回のバトンパス（t<sub>n</sub> → t<sub>n+1</sub>）の中で行う「4回の傾きサンプリング」</h2>
+      <p style="font-size:14px; color:#334155; margin:0 0 10px 0;">
+        インダクタンス急変時でも誤差が蓄積しないよう、1ステップ（<span style="font-family:serif;">Δt = 0.2 ms</span>）内で<b>始点・中点2回・終点の4回、状態方程式の右辺 f(y) を計算して重み付け平均</b>をとります（60fps描画の1フレームあたり20回反復）。
+      </p>
+
+      <div class="step-flow">
+        <div class="step-item">
+          <div class="step-head">STEP 1：始点の傾き</div>
+          <div class="step-eq">k<sub>1</sub> = f(y<sub>n</sub>)</div>
+          <div class="step-desc">現在時刻 <span style="font-family:serif;">t<sub>n</sub></span> の確定値 <span style="font-family:serif;">[i, x, v]</span> を右辺に代入して最初の傾きを算出。</div>
+        </div>
+        <div class="step-item">
+          <div class="step-head">STEP 2：中点の傾き①</div>
+          <div class="step-eq">k<sub>2</sub> = f(y<sub>n</sub> + ½Δt·k<sub>1</sub>)</div>
+          <div class="step-desc"><span style="font-family:serif;">k<sub>1</sub></span> で半歩（<span style="font-family:serif;">0.1 ms</span>）進んだ仮の中間地点の値を右辺に入れて傾きを測り直し。</div>
+        </div>
+        <div class="step-item">
+          <div class="step-head">STEP 3：中点の傾き②</div>
+          <div class="step-eq">k<sub>3</sub> = f(y<sub>n</sub> + ½Δt·k<sub>2</sub>)</div>
+          <div class="step-desc"><span style="font-family:serif;">k<sub>2</sub></span> で修正した中間地点の値を再び右辺に入れ、より正確な中点の傾きを算出。</div>
+        </div>
+        <div class="step-item">
+          <div class="step-head">STEP 4：終点の傾き</div>
+          <div class="step-eq">k<sub>4</sub> = f(y<sub>n</sub> + Δt·k<sub>3</sub>)</div>
+          <div class="step-desc"><span style="font-family:serif;">k<sub>3</sub></span> でゴール地点（<span style="font-family:serif;">t<sub>n</sub> + 0.2 ms</span>）まで仮に進んだ地点の傾きを算出。</div>
+        </div>
+        <div class="step-item accent" style="flex:1.35;">
+          <div class="step-head">STEP 5：重み付け平均で確定</div>
+          <div class="step-eq" style="color:#0369a1;">y<sub>n+1</sub> = y<sub>n</sub> + (Δt/6)(k<sub>1</sub> + 2k<sub>2</sub> + 2k<sub>3</sub> + k<sub>4</sub>)</div>
+          <div class="step-desc">局所打切り誤差 <span style="font-family:serif;">O(Δt<sup>5</sup>)</span> の高精度で次の時刻の <span style="font-family:serif;">[i, x, v]</span> を確定し、次へバトンタッチ。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="box orange" style="padding:13px 16px;">
+        <h3 class="box-title" style="font-size:15.5px;"><span class="badge-num">A</span>スイッチ状態の切替</h3>
+        <p style="font-size:13.5px; color:#334155; margin:0; line-height:1.5;">
+          ゲート信号に応じて印加電圧を切替：<br>
+          ・<b>ON時</b>：<span style="font-family:serif;">V<sub>eff</sub> = +V<sub>sup</sub></span>（電源駆動）<br>
+          ・<b>OFF時</b>：<span style="font-family:serif;">V<sub>eff</sub> = −V<sub>d</sub></span>（還流ダイオード順方向降下 0.7V で減衰）
+        </p>
+      </div>
+
+      <div class="box green" style="padding:13px 16px;">
+        <h3 class="box-title" style="font-size:15.5px;"><span class="badge-num">B</span>ダイオードの逆阻止特性</h3>
+        <p style="font-size:13.5px; color:#334155; margin:0; line-height:1.5;">
+          OFF時の還流ループでは、磁気エネルギーが尽きた後に逆流しないよう、<b><span style="font-family:serif;">i(t) ≤ 0</span> に達した時点で <span style="font-family:serif;">i = 0, di/dt = 0</span> にクランプ</b>し、実際の整流特性を再現。
+        </p>
+      </div>
+
+      <div class="box" style="padding:13px 16px;">
+        <h3 class="box-title" style="font-size:15.5px;"><span class="badge-num" style="background:#475569;">C</span>メカストッパーの変位制限</h3>
+        <p style="font-size:13.5px; color:#334155; margin:0; line-height:1.5;">
+          プランジャの可動範囲 <span style="font-family:serif;">0 ≤ x ≤ 8.0 mm</span> を超えないよう、<b>初期位置（<span style="font-family:serif;">x=0</span>）および固定鉄心吸着端（<span style="font-family:serif;">x=x<sub>max</sub></span>）到達時に速度 <span style="font-family:serif;">v = 0</span></b> へ拘束。
+        </p>
+      </div>
+    </div>
+
+    <div class="highlight-banner">
+      <div class="banner-text">🎯 <b>結果</b>：吸着直前の急激な <b>dL/dx</b> と <b>v</b> の増大をRK4が正確に捉えることで、実機特有の<b>「電流ディップ波形」</b>が自然に再現されます。</div>
+      <div class="banner-pill">Sub-step: 200 μs / Accuracy: O(Δt⁵)</div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>ソレノイド駆動回路 3Dテストベンチ ― 電気・機械連成数値解析アルゴリズム</span>
+    <span>Implemented in JavaScript / WebGL (Three.js)</span>
+  </div>
+</div>
+
+<!-- =====================================================================
+     SLIDE 4: 4次ルンゲ＝クッタ法（RK4）の幾何学的イメージ・アニメーション解説
+     ===================================================================== -->
+<div class="slide" id="slide-4">
+  <div class="slide-header">
+    <div>
+      <div class="slide-tag">数値シミュレーション手法解説（4 / 4）― インタラクティブ図解</div>
+      <h1 class="slide-title">【視覚化】4次ルンゲ＝クッタ法（RK4）と勾配場による誤差相殺のメカニズム</h1>
+    </div>
+    <div class="slide-num">SLIDE 04 / 04</div>
+  </div>
+
+  <div class="slide-body">
+    <div class="anim-grid">
+      <!-- 左側：アニメーションキャンバス -->
+      <div class="anim-canvas-wrap">
+        <canvas id="rk4Canvas" width="700" height="410"></canvas>
+
+        <div class="anim-bottom-bar">
+          <div class="anim-btn-group">
+            <button id="btnPlay" class="anim-btn accent" onclick="togglePlay()">一時停止</button>
+            <button class="anim-btn secondary" onclick="nextStage()">コマ送り ▶</button>
+            <button class="anim-btn secondary" onclick="resetAnim()">最初から</button>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label for="stepSlider">Δt:</label>
+            <input type="range" id="stepSlider" min="0.4" max="2.0" step="0.1" value="1.4" style="width:90px; accent-color:#38bdf8; cursor:pointer;">
+            <span id="stepVal" style="font-family:monospace; color:#38bdf8; font-weight:bold;">1.4</span>
+          </div>
+
+          <div class="anim-err-group">
+            <span style="color:#f87171;">Euler誤差: <b id="errEuler">0.0000</b></span>
+            <span style="color:#38bdf8;">RK4誤差: <b id="errRK4">0.0000</b></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側：各ステップの解説カード -->
+      <div class="anim-side">
+        <div class="anim-card" id="card-1">
+          <div class="anim-card-title"><span class="dot" style="background:#ef4444;"></span>STEP 1：始点の勾配 k₁（オイラー法と同じ）</div>
+          <div class="anim-card-eq">k₁ = f(tₙ, yₙ)</div>
+          <p class="anim-card-desc">出発点での勾配 k₁ だけで最後まで進む（オイラー法）と、真の曲線より上側へ大きく外れます。</p>
+        </div>
+
+        <div class="anim-card" id="card-2">
+          <div class="anim-card-title"><span class="dot" style="background:#f59e0b;"></span>STEP 2：仮の中点① での勾配 k₂</div>
+          <div class="anim-card-eq">k₂ = f(tₙ + ½Δt, yₙ + ½Δt·k₁)</div>
+          <p class="anim-card-desc">k₁ で半歩進んだ仮の中点は真の曲線より少し上にあるため、その場の勾配 k₂ は緩やか（下向き補正）になります。</p>
+        </div>
+
+        <div class="anim-card" id="card-3">
+          <div class="anim-card-title"><span class="dot" style="background:#10b981;"></span>STEP 3：仮の中点② での勾配 k₃</div>
+          <div class="anim-card-eq">k₃ = f(tₙ + ½Δt, yₙ + ½Δt·k₂)</div>
+          <p class="anim-card-desc">緩やかになった k₂ で再び半歩進むとほぼ真の曲線上に乗り、その地点での正確な勾配 k₃ を得ます。</p>
+        </div>
+
+        <div class="anim-card" id="card-4">
+          <div class="anim-card-title"><span class="dot" style="background:#a855f7;"></span>STEP 4：仮の終点での勾配 k₄</div>
+          <div class="anim-card-eq">k₄ = f(tₙ + Δt, yₙ + Δt·k₃)</div>
+          <p class="anim-card-desc">k₃ で終点（tₙ + Δt）まで仮に進み、終点位置での勾配 k₄ をサンプリングします。</p>
+        </div>
+
+        <div class="anim-card" id="card-5">
+          <div class="anim-card-title"><span class="dot" style="background:#0284c7;"></span>STEP 5：4つの勾配を 1 : 2 : 2 : 1 で重み付け平均</div>
+          <div class="anim-card-eq">yₙ₊₁ = yₙ + (Δt / 6)(k₁ + 2k₂ + 2k₃ + k₄)</div>
+          <p class="anim-card-desc">k₁ の行き過ぎと k₂, k₄ の緩やかさが相殺され、平均化された直線が真の曲線上の終点へ高精度に着地します。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-banner">
+      <div class="banner-text">💡 <b>直感的理解</b>：背景の薄い線分（勾配場 f(t, y)）の通り、<b>「少し外れた仮の中点で逆向きの補正勾配を拾って平均する」</b>ことで曲線誤差を打ち消しています。</div>
+      <div class="banner-pill">Interactive Canvas Animation</div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>ソレノイド駆動回路 3Dテストベンチ ― 電気・機械連成数値解析アルゴリズム</span>
+    <span>RK4 Geometric Interpretation</span>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('rk4Canvas');
+const ctx = canvas.getContext('2d');
+
+// 滑らかな指数飽和曲線（RL回路の電流立ち上がり特性：y(t) = 0.4 + 2.5 * (1 - exp(-1.1 * t))）
+function yExact(t) {
+  return 0.4 + 2.5 * (1 - Math.exp(-1.1 * t));
+}
+
+function f(t, y) {
+  return 1.1 * (2.9 - y);
+}
+
+let t0 = 0.35;
+let h = 1.4;       // ステップ幅 Δt
+let stage = 1;     // 1..5
+let stageProgress = 0;
+let isPlaying = true;
+let lastTime = performance.now();
+
+document.getElementById('stepSlider').addEventListener('input', e => {
+  h = parseFloat(e.target.value);
+  document.getElementById('stepVal').textContent = h.toFixed(1);
+});
+
+function togglePlay() {
+  isPlaying = !isPlaying;
+  const btn = document.getElementById('btnPlay');
+  btn.textContent = isPlaying ? '一時停止' : '再生する';
+  btn.className = isPlaying ? 'anim-btn accent' : 'anim-btn';
+}
+
+function nextStage() {
+  isPlaying = false;
+  const btn = document.getElementById('btnPlay');
+  btn.textContent = '再生する';
+  btn.className = 'anim-btn';
+  stage = (stage % 5) + 1;
+  stageProgress = 1.0;
+  updateCards();
+}
+
+function resetAnim() {
+  stage = 1;
+  stageProgress = 0;
+  isPlaying = true;
+  const btn = document.getElementById('btnPlay');
+  btn.textContent = '一時停止';
+  btn.className = 'anim-btn accent';
+  updateCards();
+}
+
+function updateCards() {
+  for (let s = 1; s <= 5; s++) {
+    const el = document.getElementById('card-' + s);
+    if (s === stage) el.classList.add('active');
+    else el.classList.remove('active');
+  }
+}
+
+// 座標変換 (t: 0..2.7, y: 0..3.6)
+function toPx(t, y) {
+  const padL = 52, padR = 28, padT = 28, padB = 40;
+  const W = canvas.width - padL - padR;
+  const H = canvas.height - padT - padB;
+  const px = padL + (t / 2.7) * W;
+  const py = padT + H - (y / 3.6) * H;
+  return { x: px, y: py };
+}
+
+// 背景のベクトル場（勾配場 dy/dt = f(t, y)）
+function drawVectorField() {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+  ctx.lineWidth = 1.2;
+  const lenT = 0.08;
+  for (let t = 0.15; t <= 2.6; t += 0.22) {
+    for (let y = 0.25; y <= 3.45; y += 0.28) {
+      const slope = f(t, y);
+      const p1 = toPx(t - lenT * 0.5, y - slope * lenT * 0.5);
+      const p2 = toPx(t + lenT * 0.5, y + slope * lenT * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawArrow(x1, y1, x2, y2, color, width = 2.5, dashed = false) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = width;
+  if (dashed) ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const headLen = 9;
+  if (Math.hypot(x2 - x1, y2 - y1) > 10) {
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 7), y2 - headLen * Math.sin(angle - Math.PI / 7));
+    ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 7), y2 - headLen * Math.sin(angle + Math.PI / 7));
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawSlopeSegment(tCenter, yCenter, slope, lenT, color, label, offsetY = -6) {
+  const pA = toPx(tCenter - lenT * 0.45, yCenter - slope * lenT * 0.45);
+  const pB = toPx(tCenter + lenT * 0.55, yCenter + slope * lenT * 0.55);
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  ctx.moveTo(pA.x, pA.y);
+  ctx.lineTo(pB.x, pB.y);
+  ctx.stroke();
+
+  const pMid = toPx(tCenter, yCenter);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(pMid.x, pMid.y, 5.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText(label, pB.x + 6, pB.y + offsetY);
+  ctx.restore();
+}
+
+function render(now) {
+  requestAnimationFrame(render);
+  const dtFrame = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+
+  if (isPlaying) {
+    stageProgress += dtFrame * 0.72;
+    if (stageProgress >= 1.35) {
+      stageProgress = 0;
+      stage = (stage % 5) + 1;
+      updateCards();
+    }
+  }
+  const prog = Math.min(1.0, stageProgress);
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 背景グリッド
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1;
+  for (let gt = 0; gt <= 2.7; gt += 0.5) {
+    const p1 = toPx(gt, 0), p2 = toPx(gt, 3.6);
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+  }
+  for (let gy = 0; gy <= 3.6; gy += 0.5) {
+    const p1 = toPx(0, gy), p2 = toPx(2.7, gy);
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+  }
+
+  // ベクトル場（勾配場）
+  drawVectorField();
+
+  // 縦ガイドライン
+  const tMid = t0 + 0.5 * h;
+  const tEnd = t0 + h;
+  const guides = [
+    { t: t0, lbl: 'tₙ (現在)' },
+    { t: tMid, lbl: 'tₙ + ½Δt' },
+    { t: tEnd, lbl: 'tₙ + Δt' }
+  ];
+  guides.forEach(g => {
+    const pTop = toPx(g.t, 3.55), pBot = toPx(g.t, 0);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(pTop.x, pTop.y); ctx.lineTo(pBot.x, pBot.y); ctx.stroke();
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(g.lbl, pBot.x, pBot.y + 18);
+    ctx.restore();
+  });
+
+  // 真の解曲線（グレー破線）
+  ctx.save();
+  ctx.strokeStyle = 'rgba(226, 232, 240, 0.78)';
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath();
+  for (let t = 0.05; t <= 2.65; t += 0.03) {
+    const p = toPx(t, yExact(t));
+    if (t <= 0.06) ctx.moveTo(p.x, p.y);
+    else ctx.lineTo(p.x, p.y);
+  }
+  ctx.stroke();
+  const pCurveLbl = toPx(2.25, yExact(2.25));
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('真の解曲線 y(t)', pCurveLbl.x - 30, pCurveLbl.y + 20);
+  ctx.restore();
+
+  // RK4 各値の計算
+  const y0 = yExact(t0);
+  const k1 = f(t0, y0);
+  const yMid1 = y0 + 0.5 * h * k1;
+  const k2 = f(tMid, yMid1);
+  const yMid2 = y0 + 0.5 * h * k2;
+  const k3 = f(tMid, yMid2);
+  const yEnd3 = y0 + h * k3;
+  const k4 = f(tEnd, yEnd3);
+
+  const kAvg = (k1 + 2 * k2 + 2 * k3 + k4) / 6.0;
+  const yNextRK4 = y0 + h * kAvg;
+  const yNextEuler = y0 + h * k1;
+  const yTrueEnd = yExact(tEnd);
+
+  // 誤差表示更新
+  document.getElementById('errEuler').textContent = Math.abs(yNextEuler - yTrueEnd).toFixed(4);
+  document.getElementById('errRK4').textContent = Math.abs(yNextRK4 - yTrueEnd).toFixed(4);
+
+  const p0 = toPx(t0, y0);
+
+  // STEP 1: k1 とオイラー法比較
+  if (stage >= 1) {
+    const curT = stage === 1 ? t0 + h * prog : tEnd;
+    const curY = y0 + (curT - t0) * k1;
+    const pCur = toPx(curT, curY);
+    drawArrow(p0.x, p0.y, pCur.x, pCur.y, 'rgba(239, 68, 68, 0.55)', 2, true);
+    drawSlopeSegment(t0, y0, k1, 0.36, '#ef4444', `k₁=${k1.toFixed(2)}`, -6);
+
+    if (stage > 1 || prog > 0.85) {
+      const pEu = toPx(tEnd, yNextEuler);
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath(); ctx.arc(pEu.x, pEu.y, 5.5, 0, Math.PI * 2); ctx.fill();
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('オイラー法 (誤差大)', pEu.x - 50, pEu.y - 12);
+    }
+  }
+
+  // STEP 2: k2 (仮の中点1)
+  if (stage >= 2) {
+    const frac = stage === 2 ? prog : 1.0;
+    const pM1 = toPx(t0 + 0.5 * h * frac, y0 + 0.5 * h * k1 * frac);
+    drawArrow(p0.x, p0.y, pM1.x, pM1.y, '#f59e0b', 2.2, true);
+    if (frac > 0.7) {
+      drawSlopeSegment(tMid, yMid1, k2, 0.36, '#f59e0b', `k₂=${k2.toFixed(2)}`, -8);
+    }
+  }
+
+  // STEP 3: k3 (仮の中点2)
+  if (stage >= 3) {
+    const frac = stage === 3 ? prog : 1.0;
+    const pM2 = toPx(t0 + 0.5 * h * frac, y0 + 0.5 * h * k2 * frac);
+    drawArrow(p0.x, p0.y, pM2.x, pM2.y, '#10b981', 2.2, true);
+    if (frac > 0.7) {
+      drawSlopeSegment(tMid, yMid2, k3, 0.36, '#10b981', `k₃=${k3.toFixed(2)}`, 14);
+    }
+  }
+
+  // STEP 4: k4 (仮の終点)
+  if (stage >= 4) {
+    const frac = stage === 4 ? prog : 1.0;
+    const pE3 = toPx(t0 + h * frac, y0 + h * k3 * frac);
+    drawArrow(p0.x, p0.y, pE3.x, pE3.y, '#a855f7', 2.2, true);
+    if (frac > 0.7) {
+      drawSlopeSegment(tEnd, yEnd3, k4, 0.36, '#a855f7', `k₄=${k4.toFixed(2)}`, -8);
+    }
+  }
+
+  // STEP 5: RK4 重み付け平均での確定ジャンプ
+  if (stage === 5) {
+    const pFinal = toPx(t0 + h * prog, y0 + h * kAvg * prog);
+    drawArrow(p0.x, p0.y, pFinal.x, pFinal.y, '#38bdf8', 4.0, false);
+
+    if (prog > 0.85) {
+      const pHit = toPx(tEnd, yNextRK4);
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath(); ctx.arc(pHit.x, pHit.y, 7.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(`RK4 確定値 yₙ₊₁ (誤差: ${Math.abs(yNextRK4 - yTrueEnd).toFixed(4)})`, pHit.x - 135, pHit.y + 24);
+    }
+  }
+
+  // 出発点 (t_n, y_n)
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(p0.x, p0.y, 6.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('出発点 (tₙ, yₙ)', p0.x - 40, p0.y - 14);
+}
+
+updateCards();
+requestAnimationFrame(render);
+</script>
+
+</body>
+</html>
