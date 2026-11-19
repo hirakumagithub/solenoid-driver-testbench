@@ -82,10 +82,10 @@
     font-size: 11.5px;
     line-height: 1.45;
     pointer-events: none;
-    max-width: calc(100% - 250px);
+    max-width: calc(100% - 290px);
   }
 
-  /* 右上：大型リアルタイム数値HUD */
+  /* 右上：大型リアルタイム数値HUD（列幅固定・ずれ防止） */
   .telemetry-hud {
     position: absolute;
     top: 10px;
@@ -96,7 +96,7 @@
     border-radius: 10px;
     padding: 8px 12px;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 118px);
     gap: 6px 14px;
     pointer-events: none;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
@@ -104,19 +104,24 @@
   .hud-cell {
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
   .hud-label {
     font-size: 10.5px;
     color: #94a3b8;
     font-weight: bold;
     letter-spacing: 0.02em;
+    white-space: nowrap;
   }
   .hud-value {
     font-family: "Consolas", "Monaco", monospace;
+    font-variant-numeric: tabular-nums;
     font-size: 19px;
     font-weight: bold;
     line-height: 1.2;
     margin-top: 1px;
+    text-align: right;
+    white-space: nowrap;
   }
   .hud-bar-bg {
     width: 100%;
@@ -156,6 +161,15 @@
   .cam-presets button:hover {
     background: #334155;
     border-color: #38bdf8;
+  }
+  .cam-presets button.assembly-btn {
+    background: rgba(234, 88, 12, 0.22);
+    border-color: #f59e0b;
+    color: #fde68a;
+  }
+  .cam-presets button.assembly-btn:hover {
+    background: rgba(234, 88, 12, 0.42);
+    border-color: #fbbf24;
   }
 
   .status-pill {
@@ -265,6 +279,7 @@
   .readout-title { font-size: 10.5px; color: #94a3b8; }
   .readout-num {
     font-family: monospace;
+    font-variant-numeric: tabular-nums;
     font-size: 14px;
     font-weight: bold;
     margin-top: 1px;
@@ -277,7 +292,7 @@
   }
 
   /* =========================================================
-     スマートフォン・狭幅画面向けレスポンシブレイアウト (820px以下)
+     スマートフォン縦画面・狭幅画面向けレイアウト (820px以下)
      ========================================================= */
   @media (max-width: 820px) {
     html, body {
@@ -317,7 +332,7 @@
       left: 6px;
       padding: 4px 7px;
       font-size: 10px;
-      max-width: 52%;
+      max-width: 48%;
     }
     .badge-detail {
       display: none;
@@ -330,6 +345,7 @@
       top: 6px;
       right: 6px;
       padding: 5px 8px;
+      grid-template-columns: repeat(2, 86px);
       gap: 4px 8px;
     }
     .hud-label {
@@ -366,6 +382,110 @@
     button {
       padding: 10px 8px;
       font-size: 13px;
+    }
+  }
+
+  /* =========================================================
+     スマートフォン横画面専用レイアウト (高さ540px以下 かつ 横向き)
+     ※ スクロール不要で1画面内に「3Dビュー＋ボタン＋波形」を同時表示
+     ※ タブレット横向き（高さ600px以上）やPCには影響しない
+     ========================================================= */
+  @media (max-height: 540px) and (orientation: landscape) {
+    html, body {
+      height: 100dvh;
+      overflow: hidden;
+    }
+    header {
+      min-height: 24px;
+      padding: 2px 10px;
+      flex-direction: row;
+      align-items: center;
+    }
+    header h1 {
+      font-size: 11.5px;
+    }
+    header .sub {
+      display: none;
+    }
+    .main-container {
+      flex-direction: row;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .view-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    #three-container {
+      flex: 1 1 58%;
+      height: 58%;
+      min-height: 0;
+      max-height: none;
+    }
+    #scope-container {
+      flex: 1 1 42%;
+      height: 42%;
+      min-height: 0;
+    }
+    /* 上部オーバーレイを極力スリム化して3Dモデルの視界を確保 */
+    .overlay-badge {
+      top: 4px;
+      left: 6px;
+      padding: 3px 6px;
+      font-size: 9.5px;
+      max-width: 36%;
+    }
+    #freq-status, .badge-detail {
+      display: none;
+    }
+    .telemetry-hud {
+      top: 4px;
+      right: 6px;
+      padding: 3px 7px;
+      grid-template-columns: repeat(4, 68px);
+      gap: 2px 6px;
+      border-radius: 6px;
+    }
+    .hud-label {
+      font-size: 8px;
+    }
+    .hud-value {
+      font-size: 11.5px;
+      line-height: 1.1;
+    }
+    .hud-bar-bg {
+      height: 2px;
+      margin-top: 2px;
+    }
+    .cam-presets {
+      bottom: 4px;
+      left: 6px;
+      right: 6px;
+      gap: 4px;
+    }
+    .cam-presets button {
+      padding: 3px 7px;
+      font-size: 10px;
+    }
+    .control-panel {
+      width: 235px;
+      flex-shrink: 0;
+      border-left: 1px solid #334155;
+      border-top: none;
+      padding: 6px 8px 16px 8px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      height: 100%;
+    }
+    button {
+      padding: 6px 6px;
+      font-size: 11px;
     }
   }
 </style>
@@ -418,11 +538,12 @@
         </div>
       </div>
 
-      <!-- 左下：視点プリセット -->
+      <!-- 左下：視点プリセット ＋ 組み立て再生ボタン -->
       <div class="cam-presets">
         <button onclick="setCameraView('bench')">全体ビュー</button>
         <button onclick="setCameraView('pcb')">駆動基板アップ</button>
         <button onclick="setCameraView('solenoid')">ソレノイドアップ</button>
+        <button class="assembly-btn" onclick="startAssemblyAnimation(true)">🔧 組み立て再生</button>
       </div>
     </div>
 
@@ -689,6 +810,21 @@ container.appendChild(renderer.domElement);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
+let currentViewMode = 'bench';
+
+function calcFitDistance(targetW, targetH) {
+  const w = Math.max(1, container.clientWidth);
+  const h = Math.max(1, container.clientHeight);
+  const aspect = w / h;
+  const vFov = THREE.MathUtils.degToRad(camera.fov);
+  const tanHalfV = Math.tan(vFov / 2);
+  const tanHalfH = tanHalfV * aspect;
+
+  const distV = (targetH / 2) / tanHalfV;
+  const distH = (targetW / 2) / tanHalfH;
+  return Math.max(distV, distH);
+}
+
 function resizeThree() {
   const w = container.clientWidth;
   const h = container.clientHeight;
@@ -696,21 +832,32 @@ function resizeThree() {
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
+    if (currentViewMode === 'bench') {
+      setCameraView('bench');
+    }
   }
 }
 
 function setCameraView(mode) {
-  const isMobile = window.innerWidth <= 820;
+  currentViewMode = mode;
   if (mode === 'solenoid') {
-    camera.position.set(1.9, 0.9, isMobile ? 5.6 : 4.4);
-    controls.target.set(1.9, 0.15, 0.0);
+    const target = new THREE.Vector3(1.9, 0.42, -0.85);
+    const dist = calcFitDistance(6.4, 3.3);
+    const dir = new THREE.Vector3(0.0, 0.15, 0.988).normalize();
+    camera.position.copy(target).addScaledVector(dir, dist);
+    controls.target.copy(target);
   } else if (mode === 'pcb') {
-    camera.position.set(-2.1, isMobile ? 2.8 : 2.35, isMobile ? 3.6 : 3.05);
-    controls.target.set(-2.1, -0.85, 1.15);
+    const target = new THREE.Vector3(-2.1, -0.85, 1.15);
+    const dist = calcFitDistance(3.8, 2.6);
+    const dir = new THREE.Vector3(0.0, 0.78, 0.62).normalize();
+    camera.position.copy(target).addScaledVector(dir, dist);
+    controls.target.copy(target);
   } else {
-    // スマホ縦画面ではカメラを少し引いてテストベンチ全体が左右に切れないように調整
-    camera.position.set(0.25, isMobile ? 3.6 : 2.95, isMobile ? 8.8 : 6.2);
-    controls.target.set(0.25, -0.15, 0.25);
+    const target = new THREE.Vector3(0.45, 0.05, 0.10);
+    const dist = calcFitDistance(10.6, 4.7);
+    const dir = new THREE.Vector3(0.0, 0.43, 0.903).normalize();
+    camera.position.copy(target).addScaledVector(dir, dist);
+    controls.target.copy(target);
   }
   controls.update();
 }
@@ -726,10 +873,10 @@ scene.add(rimLight);
 
 // 実験作業台
 const benchMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(9.8, 0.22, 4.6),
+  new THREE.BoxGeometry(9.8, 0.22, 4.8),
   new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.75 })
 );
-benchMesh.position.set(0.4, -1.12, 0.25);
+benchMesh.position.set(0.4, -1.12, 0.10);
 scene.add(benchMesh);
 
 function createTextTexture(text, bgColor, textColor, w = 256, h = 64, fontSize = 28) {
@@ -749,8 +896,9 @@ function createTextTexture(text, bgColor, textColor, w = 256, h = 64, fontSize =
 // =========================================================
 // [A] 左奥：直流安定化電源ユニット (Bench Power Supply)
 // =========================================================
+const psuTargetPos = new THREE.Vector3(-3.1, -0.25, -0.85);
 const psuGroup = new THREE.Group();
-psuGroup.position.set(-3.1, -0.25, -0.85);
+psuGroup.position.copy(psuTargetPos);
 scene.add(psuGroup);
 
 const psuBody = new THREE.Mesh(
@@ -991,18 +1139,23 @@ addTermBlock(-1.25, 0.68, 0x475569);
 // =========================================================
 // [C] 外部ケーブル配線と電流ループ粒子
 // =========================================================
+const wiresGroup = new THREE.Group();
+scene.add(wiresGroup);
+
+const wireMaterials = [];
 function createWireTube(points, colorHex, radius = 0.032) {
   const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p[0], p[1], p[2])));
   const geo = new THREE.TubeGeometry(curve, 64, radius, 8, false);
-  const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 });
+  const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4, transparent: true, opacity: 1.0 });
+  wireMaterials.push(mat);
   const mesh = new THREE.Mesh(geo, mat);
-  scene.add(mesh);
+  wiresGroup.add(mesh);
   return curve;
 }
 
 createWireTube([[-3.52, -0.67, -0.10], [-3.52, -0.85, 0.35], [-3.35, -0.85, 0.63]], 0xef4444, 0.032);
-createWireTube([[-0.85, -0.85, 0.63], [-0.45, -0.85, 0.63], [-0.25, 0.15, 0.45]], 0xfbbf24, 0.032);
-createWireTube([[1.85, 0.15, 0.45], [1.65, -0.85, 1.31], [-0.85, -0.85, 1.31]], 0xf59e0b, 0.032);
+createWireTube([[-0.85, -0.85, 0.63], [-0.45, -0.85, 0.35], [-0.25, 0.57, -0.35]], 0xfbbf24, 0.032);
+createWireTube([[1.85, 0.57, -0.35], [1.65, -0.85, 0.75], [-0.85, -0.85, 1.31]], 0xf59e0b, 0.032);
 createWireTube([[-3.35, -0.85, 1.83], [-3.75, -0.85, 1.83], [-3.75, -0.85, 0.25], [-2.68, -0.67, -0.10]], 0x64748b, 0.032);
 
 const pathOnCurve = new THREE.CatmullRomCurve3([
@@ -1011,8 +1164,8 @@ const pathOnCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(-2.55, -0.88, 0.63),
   new THREE.Vector3(-1.70, -0.78, 0.63),
   new THREE.Vector3(-0.85, -0.88, 0.63),
-  new THREE.Vector3(-0.25,  0.15, 0.45),
-  new THREE.Vector3( 1.85,  0.15, 0.45),
+  new THREE.Vector3(-0.25,  0.57, -0.35),
+  new THREE.Vector3( 1.85,  0.57, -0.35),
   new THREE.Vector3(-0.85, -0.88, 1.31),
   new THREE.Vector3(-1.55, -0.88, 1.31),
   new THREE.Vector3(-1.55, -0.78, 1.55),
@@ -1023,7 +1176,7 @@ const pathOnCurve = new THREE.CatmullRomCurve3([
 ], true);
 
 const pathOffCurve = new THREE.CatmullRomCurve3([
-  new THREE.Vector3( 1.85,  0.15, 0.45),
+  new THREE.Vector3( 1.85,  0.57, -0.35),
   new THREE.Vector3(-0.85, -0.88, 1.31),
   new THREE.Vector3(-1.55, -0.88, 1.31),
   new THREE.Vector3(-2.55, -0.88, 1.31),
@@ -1031,7 +1184,7 @@ const pathOffCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(-2.55, -0.88, 0.63),
   new THREE.Vector3(-1.70, -0.78, 0.63),
   new THREE.Vector3(-0.85, -0.88, 0.63),
-  new THREE.Vector3(-0.25,  0.15, 0.45)
+  new THREE.Vector3(-0.25,  0.57, -0.35)
 ], true);
 
 const wireParticlesOn = [];
@@ -1056,7 +1209,8 @@ for (let k = 0; k < 16; k++) {
 // =========================================================
 // [D] 右側：3Dソレノイド本体 ＋ ばね固定ブラケット ＋ 出力ホイール
 // =========================================================
-const solOffset = new THREE.Vector3(0.95, 0.0, -0.15);
+const axisY = 0.62;
+const solOffset = new THREE.Vector3(0.95, 0.0, -0.95);
 const solGroup = new THREE.Group();
 solGroup.position.copy(solOffset);
 scene.add(solGroup);
@@ -1071,25 +1225,25 @@ solGroup.add(solStand);
 const yokeMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.35, metalness: 0.75 });
 const stopperMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.54, 0.95, 36), yokeMat);
 stopperMesh.rotation.z = Math.PI / 2;
-stopperMesh.position.set(-1.15, 0.2, 0);
+stopperMesh.position.set(-1.15, axisY, 0);
 solGroup.add(stopperMesh);
 
 const gapFaceMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
 const stopperFace = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.04, 36), gapFaceMat);
 stopperFace.rotation.z = Math.PI / 2;
-stopperFace.position.set(-0.67, 0.2, 0);
+stopperFace.position.set(-0.67, axisY, 0);
 solGroup.add(stopperFace);
 
-const frameBack = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.9, 1.9), yokeMat);
-frameBack.position.set(-1.7, 0.2, 0);
+const frameBack = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.42, 1.9), yokeMat);
+frameBack.position.set(-1.7, 0.28, 0);
 solGroup.add(frameBack);
 
 const springRetainerX = 2.42;
 const retainerWall = new THREE.Mesh(
-  new THREE.BoxGeometry(0.20, 1.85, 1.5),
+  new THREE.BoxGeometry(0.20, 2.28, 1.5),
   yokeMat
 );
-retainerWall.position.set(springRetainerX + 0.10, -0.05, 0);
+retainerWall.position.set(springRetainerX + 0.10, 0.21, 0);
 solGroup.add(retainerWall);
 
 const bushingMesh = new THREE.Mesh(
@@ -1097,7 +1251,7 @@ const bushingMesh = new THREE.Mesh(
   new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.8 })
 );
 bushingMesh.rotation.z = Math.PI / 2;
-bushingMesh.position.set(springRetainerX + 0.10, 0.2, 0);
+bushingMesh.position.set(springRetainerX + 0.10, axisY, 0);
 solGroup.add(bushingMesh);
 
 const wheelPivotX = 3.35;
@@ -1125,11 +1279,11 @@ for (let sp = 0; sp < 4; sp++) {
   wheelGroup.add(spoke);
 }
 const crankPin = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.06, 0.06, 0.22, 16),
+  new THREE.CylinderGeometry(0.06, 0.06, 0.24, 16),
   new THREE.MeshStandardMaterial({ color: 0xf43f5e })
 );
 crankPin.rotation.x = Math.PI / 2;
-crankPin.position.set(0, 0.42, 0.06);
+crankPin.position.set(0, 0.42, 0.08);
 wheelGroup.add(crankPin);
 
 const linkRod = new THREE.Mesh(
@@ -1143,12 +1297,12 @@ const bobbinMat = new THREE.MeshStandardMaterial({
 });
 const flangeL = new THREE.Mesh(new THREE.CylinderGeometry(1.18, 1.18, 0.07, 36), bobbinMat);
 flangeL.rotation.z = Math.PI / 2;
-flangeL.position.set(-1.38, 0.2, 0);
+flangeL.position.set(-1.38, axisY, 0);
 solGroup.add(flangeL);
 
 const flangeR = new THREE.Mesh(new THREE.CylinderGeometry(1.18, 1.18, 0.07, 36), bobbinMat);
 flangeR.rotation.z = Math.PI / 2;
-flangeR.position.set(1.08, 0.2, 0);
+flangeR.position.set(1.08, axisY, 0);
 solGroup.add(flangeR);
 
 const coilMaterial = new THREE.MeshStandardMaterial({
@@ -1167,7 +1321,7 @@ for (let k = 0; k < numTurns; k++) {
   const xPos = -1.25 + (k / (numTurns - 1)) * 2.22;
   const torus = new THREE.Mesh(new THREE.TorusGeometry(0.86, 0.13, 14, 40), coilMaterial);
   torus.rotation.y = Math.PI / 2;
-  torus.position.set(xPos, 0.2, 0);
+  torus.position.set(xPos, axisY, 0);
   solGroup.add(torus);
 }
 
@@ -1234,11 +1388,118 @@ function buildSpringMesh(length) {
 }
 
 const springMesh = new THREE.Mesh(buildSpringMesh(1.13), springMat);
-springMesh.position.set(springRetainerX, 0.2, 0);
+springMesh.position.set(springRetainerX, axisY, 0);
 solGroup.add(springMesh);
 
 // =========================================================
-// 4. リアルタイムオシロスコープ描画（スマホ狭幅対応）
+// [E] 立ち上げ時・組み立てアニメーション制御
+// =========================================================
+const assembly = {
+  active: false,
+  elapsed: 0,
+  duration: 2.05,
+  autoFireAfter: true,
+  parts: [
+    {
+      group: psuGroup,
+      startPos: new THREE.Vector3(-6.2, 3.1, -3.2),
+      endPos: psuTargetPos.clone(),
+      startRot: new THREE.Euler(0.25, -0.55, 0.2),
+      tStart: 0.0,
+      tEnd: 0.85
+    },
+    {
+      group: pcbGroup,
+      startPos: new THREE.Vector3(-4.6, 2.7, 4.4),
+      endPos: pcbCenter.clone(),
+      startRot: new THREE.Euler(-0.35, 0.45, -0.2),
+      tStart: 0.25,
+      tEnd: 1.10
+    },
+    {
+      group: solGroup,
+      startPos: new THREE.Vector3(5.6, 3.0, -2.6),
+      endPos: solOffset.clone(),
+      startRot: new THREE.Euler(0.2, 0.5, -0.25),
+      tStart: 0.50,
+      tEnd: 1.40
+    }
+  ]
+};
+
+function easeOutBack(t) {
+  const c1 = 1.15;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function startAssemblyAnimation(resetCamera = false) {
+  if (resetCamera) setCameraView('bench');
+  assembly.active = true;
+  assembly.elapsed = 0;
+  assembly.autoFireAfter = true;
+
+  singlePulseTimer = 0;
+  autoPulseMode = false;
+  manualHold = false;
+  phys.gateOn = false;
+  updateButtonLabels();
+
+  assembly.parts.forEach(p => {
+    p.group.position.copy(p.startPos);
+    p.group.rotation.copy(p.startRot);
+  });
+  wiresGroup.visible = false;
+  wireMaterials.forEach(m => { m.opacity = 0; });
+}
+
+function updateAssemblyAnimation(dt) {
+  if (!assembly.active) return;
+  assembly.elapsed += dt;
+  const t = assembly.elapsed;
+
+  assembly.parts.forEach(p => {
+    const raw = (t - p.tStart) / (p.tEnd - p.tStart);
+    const u = Math.max(0, Math.min(1, raw));
+    const ePos = easeOutBack(u);
+    const eRot = easeOutCubic(u);
+
+    p.group.position.lerpVectors(p.startPos, p.endPos, ePos);
+    p.group.rotation.set(
+      p.startRot.x * (1 - eRot),
+      p.startRot.y * (1 - eRot),
+      p.startRot.z * (1 - eRot)
+    );
+  });
+
+  const wireU = Math.max(0, Math.min(1, (t - 1.35) / 0.55));
+  if (wireU > 0) {
+    wiresGroup.visible = true;
+    const eW = easeOutCubic(wireU);
+    wireMaterials.forEach(m => { m.opacity = eW; });
+  }
+
+  if (t >= assembly.duration) {
+    assembly.active = false;
+    assembly.parts.forEach(p => {
+      p.group.position.copy(p.endPos);
+      p.group.rotation.set(0, 0, 0);
+    });
+    wiresGroup.visible = true;
+    wireMaterials.forEach(m => { m.opacity = 1.0; });
+
+    if (assembly.autoFireAfter) {
+      triggerSinglePulse();
+    }
+  }
+}
+
+// =========================================================
+// 4. リアルタイムオシロスコープ描画（スマホ縦・横対応）
 // =========================================================
 const scopeContainer = document.getElementById('scope-container');
 const scopeCanvas = document.getElementById('scope-canvas');
@@ -1286,12 +1547,13 @@ function drawScope() {
   sCtx.fillRect(0, 0, W, H);
 
   const isMobile = W <= 640;
+  const isCompactH = H < 155;
   const padL = isMobile ? 36 : 48;
-  const padR = isMobile ? 96 : 135;
-  const padT = isMobile ? 34 : 26;
-  const padB = 12;
+  const padR = isMobile ? 88 : 135;
+  const padT = isCompactH ? 18 : (isMobile ? 34 : 26);
+  const padB = isCompactH ? 6 : 12;
   const plotW = Math.max(80, W - padL - padR);
-  const plotH = Math.max(60, H - padT - padB);
+  const plotH = Math.max(40, H - padT - padB);
 
   sCtx.strokeStyle = '#1e293b';
   sCtx.lineWidth = 1;
@@ -1343,25 +1605,32 @@ function drawScope() {
   sCtx.fillStyle = '#fb923c'; sCtx.beginPath(); sCtx.arc(rightX, pyI, 4.5, 0, Math.PI * 2); sCtx.fill();
   sCtx.fillStyle = '#38bdf8'; sCtx.beginPath(); sCtx.arc(rightX, pyId, 3.5, 0, Math.PI * 2); sCtx.fill();
 
-  const labelX = rightX + (isMobile ? 8 : 12);
-  const rowStep = Math.max(20, plotH / 4.2);
+  const labelX = rightX + (isMobile ? 6 : 12);
+  const rowStep = plotH / 4.2;
   sCtx.textAlign = 'left';
-  sCtx.font = isMobile ? 'bold 10.5px monospace' : 'bold 12px monospace';
+  sCtx.font = (isMobile || isCompactH) ? 'bold 10px monospace' : 'bold 12px monospace';
 
   sCtx.fillStyle = '#fb923c';
-  sCtx.fillText('i  =' + phys.i.toFixed(2) + 'A', labelX, padT + rowStep * 0.6);
+  sCtx.fillText('i  =' + phys.i.toFixed(2) + 'A', labelX, padT + rowStep * 0.7);
 
   sCtx.fillStyle = '#38bdf8';
-  sCtx.fillText('i_D=' + phys.i_diode.toFixed(2) + 'A', labelX, padT + rowStep * 1.6);
+  sCtx.fillText('i_D=' + phys.i_diode.toFixed(2) + 'A', labelX, padT + rowStep * 1.7);
 
   sCtx.fillStyle = '#34d399';
-  sCtx.fillText('x  =' + (phys.x * 1000).toFixed(2) + 'mm', labelX, padT + rowStep * 2.6);
+  sCtx.fillText('x  =' + (phys.x * 1000).toFixed(2) + 'mm', labelX, padT + rowStep * 2.7);
 
   sCtx.fillStyle = '#c084fc';
-  sCtx.fillText('L  =' + (getL(phys.x) * 1000).toFixed(0) + 'mH', labelX, padT + rowStep * 3.6);
+  sCtx.fillText('L  =' + (getL(phys.x) * 1000).toFixed(0) + 'mH', labelX, padT + rowStep * 3.7);
 
-  if (isMobile) {
-    // スマホでは凡例を2段に折り返して見やすく配置
+  if (isCompactH) {
+    sCtx.font = 'bold 9.5px sans-serif';
+    let lx = padL;
+    sCtx.fillStyle = '#fb923c'; sCtx.fillText('■ i(t)', lx, 12); lx += 48;
+    sCtx.fillStyle = '#38bdf8'; sCtx.fillText('■ i_D(t)', lx, 12); lx += 58;
+    sCtx.fillStyle = '#34d399'; sCtx.fillText('■ x(t)', lx, 12); lx += 50;
+    sCtx.fillStyle = '#c084fc'; sCtx.fillText('■ L(x)', lx, 12); lx += 50;
+    sCtx.fillStyle = '#94a3b8'; sCtx.fillText('■ Gate', lx, 12);
+  } else if (isMobile) {
     sCtx.font = 'bold 10px sans-serif';
     sCtx.fillStyle = '#fb923c'; sCtx.fillText('■ 電流 i(t)', padL, 12);
     sCtx.fillStyle = '#38bdf8'; sCtx.fillText('■ 還流 i_D(t)', padL + 82, 12);
@@ -1393,12 +1662,16 @@ function animate(now) {
   const rawDt = Math.min(0.033, (now - lastFrameTime) / 1000);
   lastFrameTime = now;
 
+  updateAssemblyAnimation(rawDt);
+
   const subSteps = 20;
   const subDt = 0.0002;
   const period = 1.0 / pulseFreq;
 
   for (let s = 0; s < subSteps; s++) {
-    if (singlePulseTimer > 0) {
+    if (assembly.active) {
+      phys.gateOn = false;
+    } else if (singlePulseTimer > 0) {
       singlePulseTimer -= subDt;
       phys.gateOn = true;
       if (singlePulseTimer <= 0) {
@@ -1419,25 +1692,25 @@ function animate(now) {
   // プランジャ＆ばね更新
   const strokeRatio = phys.x / phys.x_max;
   const plungerX = 0.99 - strokeRatio * 0.72;
-  plungerGroup.position.set(plungerX, 0.2, 0);
+  plungerGroup.position.set(plungerX, axisY, 0);
 
   const collarWorldX = plungerX + 0.29;
   const currentSpringLen = Math.max(0.45, springRetainerX - collarWorldX);
   springMesh.scale.x = currentSpringLen / 1.13;
 
-  // 出力ホイール＆リンクロッド連動
-  const wheelAngle = -strokeRatio * 1.15;
+  // 出力ホイール＆リンクロッド連動（右移動＝時計回り、左移動＝反時計回り）
+  const wheelAngle = (strokeRatio - 0.35) * 1.15;
   wheelGroup.rotation.z = wheelAngle;
 
   const clevisX = plungerX + 2.58;
-  const clevisY = 0.2;
+  const clevisY = axisY;
   const pinX = wheelPivotX - Math.sin(wheelAngle) * 0.42;
   const pinY = wheelPivotY + Math.cos(wheelAngle) * 0.42;
 
   const dx = pinX - clevisX;
   const dy = pinY - clevisY;
   const rodLen = Math.hypot(dx, dy);
-  linkRod.position.set((clevisX + pinX) / 2, (clevisY + pinY) / 2, 0.06);
+  linkRod.position.set((clevisX + pinX) / 2, (clevisY + pinY) / 2, 0.14);
   linkRod.rotation.z = Math.atan2(dy, dx);
   linkRod.scale.x = rodLen / 0.95;
 
@@ -1447,14 +1720,14 @@ function animate(now) {
   pMat.color.setHex(phys.gateOn ? 0xfb923c : 0x38bdf8);
 
   particles.forEach(p => {
-    p.visible = (phys.i > 0.015);
+    p.visible = (!assembly.active && phys.i > 0.015);
     const a = p.userData.angle + particlePhase;
     const rad = 1.01;
-    p.position.set(p.userData.xPos, 0.2 + Math.cos(a) * rad, Math.sin(a) * rad);
+    p.position.set(p.userData.xPos, axisY + Math.cos(a) * rad, Math.sin(a) * rad);
   });
 
   // 基板上の電流ルート表示
-  const isActiveCurrent = (phys.i > 0.015);
+  const isActiveCurrent = (!assembly.active && phys.i > 0.015);
   const showOnLoop = isActiveCurrent && phys.gateOn;
   const showOffLoop = isActiveCurrent && !phys.gateOn;
 
@@ -1488,7 +1761,10 @@ function animate(now) {
 
   // UIステータス更新
   const badge = document.getElementById('mode-badge');
-  if (phys.gateOn) {
+  if (assembly.active) {
+    badge.textContent = 'テストベンチ組み立て中...';
+    badge.className = 'status-pill pill-off';
+  } else if (phys.gateOn) {
     badge.textContent = autoPulseMode
       ? `MOSFET ON (${pulseFreq.toFixed(1)}Hz)`
       : 'MOSFET ON（駆動中）';
@@ -1537,13 +1813,16 @@ function animate(now) {
 }
 
 window.addEventListener('resize', resizeThree);
+window.addEventListener('orientationchange', () => {
+  setTimeout(resizeThree, 250);
+});
 
 resizeThree();
 updateFreqReadout();
 setCameraView('bench');
+startAssemblyAnimation(false);
 setTimeout(() => {
   resizeThree();
-  triggerSinglePulse();
 }, 150);
 requestAnimationFrame(animate);
 </script>
